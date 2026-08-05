@@ -63,10 +63,15 @@ This regenerates `relay/bindings.generated.ahk` and `docs/control-panel-entry-sh
 pwsh -File tools/ci.ps1
 ```
 
-The same script CI runs: JSON parses, PowerShell parses, PSScriptAnalyzer, the committed
-generated files match a fresh `generate.ps1` run and contain no absolute paths, the relay
-compiles under AutoHotkey `/validate`, the relay starts and registers the expected chord
-count, every scaffold stub exits 0, and every relative markdown link resolves.
+The same script CI runs: JSON parses, PowerShell parses, sources are ASCII-only,
+PSScriptAnalyzer, the committed generated files match a fresh `generate.ps1` run and contain
+no absolute paths or BOM, the relay compiles under AutoHotkey `/validate`, the relay starts
+and registers the expected chord count, every scaffold stub exits 0, and every relative
+markdown link resolves.
+
+Scripts stay ASCII-only on purpose. Windows PowerShell 5.1 reads BOM-less files as ANSI, so a
+single non-ASCII character in a string literal breaks parsing — and the relay falls back to
+5.1 when PowerShell 7 is absent.
 
 Generation is machine-independent: paths in `relay/bindings.generated.ahk` are repo-relative
 and the relay resolves them against its own location, and the config hash ignores line-ending

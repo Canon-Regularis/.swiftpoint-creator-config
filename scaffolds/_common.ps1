@@ -69,5 +69,5 @@ function Invoke-ScaffoldStub {
     )
     Write-ScaffoldLog "STUB  $Slot  ($Description)"
     Show-ScaffoldToast -Title "Swiftpoint: $Description" `
-                       -Message "Slot '$Slot' fired. Stub only — add your code to scaffolds/$Slot.ps1"
+                       -Message "Slot '$Slot' fired. Stub only - add your code to scaffolds/$Slot.ps1"
 }

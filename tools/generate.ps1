@@ -70,7 +70,7 @@ $config     = Get-Content -Raw -LiteralPath $ConfigPath | ConvertFrom-Json
 $sourceHash = Get-ConfigHash -Path $ConfigPath
 
 $activeSet = $config.activeChordSet
-if (-not $config.chordSets.PSObject.Properties.Name.Contains($activeSet)) {
+if (@($config.chordSets.PSObject.Properties.Name) -notcontains $activeSet) {
     throw "activeChordSet '$activeSet' is not defined in chordSets."
 }
 $chords = $config.chordSets.$activeSet
@@ -85,7 +85,7 @@ function Get-ActionInfo($Action) {
     switch ($Action.action) {
         'scaffold' {
             $slot = $Action.slot
-            if (-not $config.slots.PSObject.Properties.Name.Contains($slot)) {
+            if (@($config.slots.PSObject.Properties.Name) -notcontains $slot) {
                 throw "Button references unknown slot '$slot'. Add it to the 'slots' section."
             }
             $slotCfg = $config.slots.$slot
@@ -125,7 +125,7 @@ function Get-GestureName([string]$Mode) {
 # --- button model, shared by both outputs -----------------------------------
 
 $buttons = foreach ($btn in $config.buttons) {
-    if (-not $chords.PSObject.Properties.Name.Contains($btn.chord)) {
+    if (@($chords.PSObject.Properties.Name) -notcontains $btn.chord) {
         throw "Button '$($btn.id)' references chord '$($btn.chord)', missing from chordSet '$activeSet'."
     }
     $chord = $chords.$($btn.chord)
@@ -207,7 +207,7 @@ $ahk.Add(')')
 $ahk.Add('')
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $AhkOut) | Out-Null
-Set-Content -LiteralPath $AhkOut -Value ($ahk -join "`r`n") -Encoding UTF8
+Write-Utf8NoBom -Path $AhkOut -Content ($ahk -join "`r`n")
 
 # --- docs/control-panel-entry-sheet.md --------------------------------------
 
@@ -279,7 +279,7 @@ $md.Add('- **Hold never triggers**: see the Auto-Release note above.')
 $md.Add('')
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $SheetOut) | Out-Null
-Set-Content -LiteralPath $SheetOut -Value ($md -join "`r`n") -Encoding UTF8
+Write-Utf8NoBom -Path $SheetOut -Content ($md -join "`r`n")
 
 if (-not $Quiet) {
     Write-Host "Generated from config/bindings.json (chord set: $activeSet)" -ForegroundColor Green

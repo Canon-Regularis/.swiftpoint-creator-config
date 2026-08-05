@@ -31,7 +31,7 @@ $RelayPath  = Get-RepoPath 'relay/swiftpoint-relay.ahk'
 $ShortcutNm = 'Swiftpoint Creator Relay.lnk'
 
 Write-Host ''
-Write-Host 'Swiftpoint Creator relay — setup' -ForegroundColor Cyan
+Write-Host 'Swiftpoint Creator relay - setup' -ForegroundColor Cyan
 Write-Host ''
 
 # --- AutoHotkey v2 ----------------------------------------------------------
@@ -97,7 +97,7 @@ if (-not $NoStart) {
 
 Write-Host ''
 Write-Host 'Next:' -ForegroundColor Cyan
-Write-Host '  1. Program the three chords — docs/control-panel-entry-sheet.md'
+Write-Host '  1. Program the three chords - docs/control-panel-entry-sheet.md'
 Write-Host '  2. Press Win+Shift+S and set the mode to Full screen.'
 Write-Host '  3. pwsh -File tools/verify.ps1 -Test'
 Write-Host ''

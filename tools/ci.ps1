@@ -44,7 +44,7 @@ function Start-Section {
 }
 
 Write-Host ''
-Write-Host 'Swiftpoint Creator config — CI' -ForegroundColor Cyan
+Write-Host 'Swiftpoint Creator config - CI' -ForegroundColor Cyan
 Write-Host "repo: $RepoRoot"
 
 # --- 1. config parses -------------------------------------------------------
@@ -66,7 +66,7 @@ if ($config) {
     $referenced = [System.Collections.Generic.HashSet[string]]::new()
     foreach ($button in $config.buttons) {
         foreach ($side in @($button.primary, $button.secondary)) {
-            if ($side.PSObject.Properties.Name.Contains('slot')) {
+            if (@($side.PSObject.Properties.Name) -contains 'slot') {
                 [void]$referenced.Add([string]$side.slot)
             }
         }
@@ -95,6 +95,23 @@ foreach ($file in $psFiles) {
     } else {
         Write-Check -Status PASS -Name "parse: $relative"
     }
+}
+
+# Windows PowerShell 5.1 reads BOM-less files as ANSI, so a non-ASCII character
+# in a string literal turns into mojibake and breaks parsing. The relay falls
+# back to 5.1 when PowerShell 7 is absent, where this silently broke every
+# scaffold: the script failed to parse yet still exited 0.
+$sourceFiles = @(Get-ChildItem -Path $RepoRoot -Include '*.ps1', '*.ahk', '*.psd1' -Recurse -File |
+                 Where-Object { $_.FullName -notmatch '\\\.git\\' })
+$nonAscii = 0
+foreach ($file in $sourceFiles) {
+    if ((Get-Content -Raw -LiteralPath $file.FullName) -match '[^\x00-\x7F]') {
+        Add-Failure "non-ASCII in $($file.FullName.Substring($RepoRoot.Length + 1))" 'breaks Windows PowerShell 5.1 parsing'
+        $nonAscii++
+    }
+}
+if ($nonAscii -eq 0) {
+    Write-Check -Status PASS -Name 'sources are ASCII-only' -Detail "$($sourceFiles.Count) file(s)"
 }
 
 # --- 3. PSScriptAnalyzer ----------------------------------------------------
@@ -163,9 +180,18 @@ try {
 # An absolute path here means the committed file carries one machine's layout:
 # a clone would point at the author's home directory, and the byte-comparison
 # above could never pass anywhere else.
+# A BOM here means the generator ran under Windows PowerShell 5.1, whose
+# -Encoding UTF8 adds one. Output would then differ by edition.
+foreach ($path in $generatedPaths) {
+    $head = [System.IO.File]::ReadAllBytes($path) | Select-Object -First 3
+    if (@($head).Count -ge 3 -and $head[0] -eq 0xEF -and $head[1] -eq 0xBB -and $head[2] -eq 0xBF) {
+        Add-Failure "BOM in $($path.Substring($RepoRoot.Length + 1))" 'regenerate with tools/generate.ps1'
+    }
+}
+
 $generatedAhk = Get-Content -Raw -LiteralPath (Get-RepoPath 'relay/bindings.generated.ahk')
 if ($generatedAhk -match '"[A-Za-z]:\\' -or $generatedAhk -match '"\\\\') {
-    Add-Failure 'absolute path in generated file' 'paths must stay repo-relative — see ConvertTo-EmittedPath in tools/generate.ps1'
+    Add-Failure 'absolute path in generated file' 'paths must stay repo-relative - see ConvertTo-EmittedPath in tools/generate.ps1'
 } else {
     Write-Check -Status PASS -Name 'generated paths are repo-relative'
 }
@@ -297,7 +323,7 @@ if ($brokenLinks -eq 0) {
 
 Write-Host ''
 if ($failures.Count -gt 0) {
-    Write-Host "FAILED — $($failures.Count) check(s):" -ForegroundColor Red
+    Write-Host "FAILED - $($failures.Count) check(s):" -ForegroundColor Red
     foreach ($failure in $failures) { Write-Host "  - $failure" -ForegroundColor Red }
     Write-Host ''
     exit 1

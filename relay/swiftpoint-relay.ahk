@@ -23,6 +23,9 @@ for arg in A_Args {
 ; chord -> timer callback waiting to see whether a second tap arrives
 PENDING := Map()
 
+; chord -> tick count until which further taps in the same burst are swallowed
+SUPPRESS := Map()
+
 InitTray()
 RegisterHotkeys()
 WriteLog("relay started (test=" (TEST_MODE ? "on" : "off") ", chords=" BINDINGS.Count ")")
@@ -66,10 +69,18 @@ HandleTapHold(chord, cfg) {
 ; Not the A_PriorHotkey idiom: that fires the tap action first and the
 ; double-tap action second, which would run two scaffolds.
 HandleTapDouble(chord, cfg) {
-    global PENDING, TIMING
+    global PENDING, SUPPRESS, TIMING
+
+    ; Three taps in a burst used to fire the double-tap action and then the
+    ; single-tap action, scaffolding two different projects from one gesture.
+    ; Once the double has fired, swallow the rest of the burst.
+    if (SUPPRESS.Has(chord) && A_TickCount < SUPPRESS[chord])
+        return
+
     if (PENDING.Has(chord)) {
         SetTimer(PENDING[chord], 0)
         PENDING.Delete(chord)
+        SUPPRESS[chord] := A_TickCount + TIMING["doubleTapMs"]
         Fire(cfg, "secondary")
         return
     }
@@ -93,7 +104,7 @@ Fire(cfg, which) {
     action := cfg[which]
 
     if (TEST_MODE) {
-        ShowTip(cfg["label"] "  —  " action["gesture"] "`n" action["label"])
+        ShowTip(cfg["label"] "  -  " action["gesture"] "`n" action["label"])
         WriteLog("TEST  " cfg["id"] " / " action["gesture"] " -> " action["label"])
         return
     }

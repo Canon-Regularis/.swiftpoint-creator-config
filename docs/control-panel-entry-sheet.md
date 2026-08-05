@@ -57,4 +57,3 @@ Run `pwsh -File tools/verify.ps1 -Test` and watch for a tooltip.
   `config/bindings.json`, re-run `tools/generate.ps1`, and reprogram.
 - **Two tooltips from one gesture**: raise `timing.doubleTapMs`.
 - **Hold never triggers**: see the Auto-Release note above.
-

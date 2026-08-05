@@ -108,7 +108,7 @@ function Add-JsonOutline {
     param($Node, [string]$Path = '$', [int]$Depth = 0, [int]$MaxDepth = 7)
 
     if ($Depth -gt $MaxDepth) {
-        $outline.Add("$Path  …(depth limit)")
+        $outline.Add("$Path  ...(depth limit)")
         return
     }
 
@@ -134,7 +134,7 @@ function Add-JsonOutline {
     }
 
     $sample = [string]$Node
-    if ($sample.Length -gt 60) { $sample = $sample.Substring(0, 60) + '…' }
+    if ($sample.Length -gt 60) { $sample = $sample.Substring(0, 60) + '...' }
     $outline.Add("$Path : $($Node.GetType().Name) = $sample")
 }
 
@@ -214,7 +214,7 @@ $doc.Add('5. Any checksum, length prefix, or id sequence that must be recomputed
 $doc.Add('')
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $SchemaDoc) | Out-Null
-Set-Content -LiteralPath $SchemaDoc -Value ($doc -join "`r`n") -Encoding UTF8
+Write-Utf8NoBom -Path $SchemaDoc -Content ($doc -join "`r`n")
 
 Write-Host "Wrote docs/spcf-schema.md ($($outline.Count) lines)" -ForegroundColor Green
 Write-Host ''

@@ -24,7 +24,7 @@ $failures  = 0
 $warnings  = 0
 
 Write-Host ''
-Write-Host 'Swiftpoint Creator relay — verification' -ForegroundColor Cyan
+Write-Host 'Swiftpoint Creator relay - verification' -ForegroundColor Cyan
 Write-Host ''
 
 $ahk = Find-AutoHotkeyV2
@@ -101,19 +101,19 @@ if ($Test) {
     Write-Host ''
     Write-Host 'Test mode: each gesture shows a tooltip instead of acting.' -ForegroundColor Cyan
     Write-Host ''
-    Write-Host '  1. Keyboard only — isolates the relay from the mouse config:' -ForegroundColor White
+    Write-Host '  1. Keyboard only - isolates the relay from the mouse config:' -ForegroundColor White
     foreach ($button in $config.buttons) {
         $chord   = $config.chordSets.$activeSet.$($button.chord)
         $display = (@($chord.mods) + @($chord.key)) -join '+'
         Write-Host ("       {0,-22} -> tooltip naming '{1}'" -f $display, $button.label)
     }
     Write-Host ''
-    Write-Host '  2. From the mouse — same tooltips.' -ForegroundColor White
+    Write-Host '  2. From the mouse - same tooltips.' -ForegroundColor White
     Write-Host '     Keyboard works but mouse does not: the Control Panel is not emitting the chord.'
     Write-Host "     Set activeChordSet to 'f9' in config/bindings.json, re-run tools/generate.ps1,"
     Write-Host '     and reprogram.'
     Write-Host ''
-    Write-Host '  3. Gestures — tap and double-tap must name different slots, one tooltip each.' -ForegroundColor White
+    Write-Host '  3. Gestures - tap and double-tap must name different slots, one tooltip each.' -ForegroundColor White
     Write-Host '     Two tooltips from one gesture: raise timing.doubleTapMs.'
     Write-Host ''
     Write-Host '  Leave test mode: tray icon > Exit, then'

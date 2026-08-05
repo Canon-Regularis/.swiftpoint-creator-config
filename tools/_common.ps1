@@ -36,7 +36,7 @@ function Find-AutoHotkeyV2 {
         $entry = Get-ItemProperty -Path $key -Name 'InstallDir' -ErrorAction SilentlyContinue
         # StrictMode makes a missing key or value a terminating error on plain
         # property access, so check before reaching for it.
-        if (-not $entry -or -not $entry.PSObject.Properties.Name.Contains('InstallDir')) { continue }
+        if (-not $entry -or @($entry.PSObject.Properties.Name) -notcontains 'InstallDir') { continue }
         $installDir = $entry.InstallDir
         if (-not $installDir) { continue }
         foreach ($exe in @('v2\AutoHotkey64.exe', 'v2\AutoHotkey32.exe')) {
@@ -82,6 +82,20 @@ function Get-ConfigHash {
     }
 }
 
+# Writes UTF-8 with no BOM, identically on every PowerShell edition.
+#
+# Not Set-Content -Encoding UTF8: that means "with BOM" on Windows PowerShell 5.1
+# and "without BOM" on PowerShell 7, so generated files would differ depending on
+# which edition ran the generator.
+function Write-Utf8NoBom {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][AllowEmptyString()][string]$Content
+    )
+    $encoding = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $Content, $encoding)
+}
+
 # Content equality ignoring line-ending style, for the same reason.
 function Test-ContentEqual {
     param([string]$Left, [string]$Right)
@@ -119,5 +133,5 @@ function Write-Check {
     }
     Write-Host ('  [{0}] ' -f $Status) -ForegroundColor $color -NoNewline
     Write-Host $Name -NoNewline
-    if ($Detail) { Write-Host "  — $Detail" -ForegroundColor DarkGray } else { Write-Host '' }
+    if ($Detail) { Write-Host "  - $Detail" -ForegroundColor DarkGray } else { Write-Host '' }
 }

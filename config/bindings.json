@@ -20,8 +20,8 @@
   },
 
   "timing": {
-    "_comment": "doubleTapMs: how long a tap waits for a second tap. holdMs: tap/hold threshold.",
-    "doubleTapMs": 250,
+    "_comment": "doubleTapMs: how long a tap waits for a second tap, and how long the rest of a tap burst is swallowed after a double fires. Windows' own double-click default is 500ms; a tight window here turns a slightly slow double tap into two single taps, which scaffolds the wrong project twice. holdMs: tap/hold threshold.",
+    "doubleTapMs": 400,
     "holdMs": 400,
     "snipOverlayMs": 400,
     "snipMenuMs": 120,
