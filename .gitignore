@@ -1,0 +1,5 @@
+logs/
+dist/
+
+# Personal device config
+reference/*.spcf
