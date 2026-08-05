@@ -141,19 +141,46 @@ if ($SkipAnalyzer) {
 
 Start-Section '4. Generated files'
 
-# Before regenerating anything: does the committed generated file carry the hash
-# of the committed config? Running generate.ps1 first would refresh the hash and
-# make this pass unconditionally.
+$generatedPaths = @(
+    Get-RepoPath 'relay/bindings.generated.ahk'
+    Get-RepoPath 'docs/control-panel-entry-sheet.md'
+)
+
+# Everything down to the regeneration below inspects the COMMITTED files.
+# Running generate.ps1 first would rewrite them and make these pass no matter
+# what was committed.
+
 if (Test-BindingsInSync) {
     Write-Check -Status PASS -Name 'committed hash matches committed config'
 } else {
     Add-Failure 'committed hash does not match committed config' 'run tools/generate.ps1 and commit the result'
 }
 
-$generatedPaths = @(
-    Get-RepoPath 'relay/bindings.generated.ahk'
-    Get-RepoPath 'docs/control-panel-entry-sheet.md'
-)
+# A BOM means the generator ran under Windows PowerShell 5.1, whose
+# -Encoding UTF8 adds one, so output would differ by edition. This is the only
+# check that can see it: Get-Content -Raw drops a BOM, so the byte-comparison
+# below is blind to it.
+$bomCount = 0
+foreach ($path in $generatedPaths) {
+    if (-not (Test-Path -LiteralPath $path)) { continue }
+    $head = @([System.IO.File]::ReadAllBytes($path) | Select-Object -First 3)
+    if ($head.Count -ge 3 -and $head[0] -eq 0xEF -and $head[1] -eq 0xBB -and $head[2] -eq 0xBF) {
+        Add-Failure "BOM in $($path.Substring($RepoRoot.Length + 1))" 'regenerate with tools/generate.ps1'
+        $bomCount++
+    }
+}
+if ($bomCount -eq 0) {
+    Write-Check -Status PASS -Name 'generated files have no BOM'
+}
+
+# An absolute path means the committed file carries one machine's layout, so a
+# clone would point at the author's home directory.
+$committedAhk = Get-Content -Raw -LiteralPath (Get-RepoPath 'relay/bindings.generated.ahk')
+if ($committedAhk -match '"[A-Za-z]:\\' -or $committedAhk -match '"\\\\') {
+    Add-Failure 'absolute path in generated file' 'paths must stay repo-relative - see ConvertTo-EmittedPath in tools/generate.ps1'
+} else {
+    Write-Check -Status PASS -Name 'generated paths are repo-relative'
+}
 
 $before = @{}
 foreach ($path in $generatedPaths) {
@@ -175,25 +202,6 @@ try {
     }
 } catch {
     Add-Failure 'generate.ps1 failed' $_.Exception.Message
-}
-
-# An absolute path here means the committed file carries one machine's layout:
-# a clone would point at the author's home directory, and the byte-comparison
-# above could never pass anywhere else.
-# A BOM here means the generator ran under Windows PowerShell 5.1, whose
-# -Encoding UTF8 adds one. Output would then differ by edition.
-foreach ($path in $generatedPaths) {
-    $head = [System.IO.File]::ReadAllBytes($path) | Select-Object -First 3
-    if (@($head).Count -ge 3 -and $head[0] -eq 0xEF -and $head[1] -eq 0xBB -and $head[2] -eq 0xBF) {
-        Add-Failure "BOM in $($path.Substring($RepoRoot.Length + 1))" 'regenerate with tools/generate.ps1'
-    }
-}
-
-$generatedAhk = Get-Content -Raw -LiteralPath (Get-RepoPath 'relay/bindings.generated.ahk')
-if ($generatedAhk -match '"[A-Za-z]:\\' -or $generatedAhk -match '"\\\\') {
-    Add-Failure 'absolute path in generated file' 'paths must stay repo-relative - see ConvertTo-EmittedPath in tools/generate.ps1'
-} else {
-    Write-Check -Status PASS -Name 'generated paths are repo-relative'
 }
 
 # --- 5. AutoHotkey ----------------------------------------------------------
@@ -227,7 +235,7 @@ if ($SkipAhk) {
 
 Start-Section '6. Relay runtime'
 
-if ($SkipAhk -or $SkipRuntime -or -not $ahk) {
+if ($SkipAhk -or $SkipRuntime -or -not $ahk -or -not $config) {
     Write-Check -Status INFO -Name 'skipped'
 } else {
     $logPath      = Get-RepoPath $config.relay.logFile
@@ -278,17 +286,22 @@ if ($SkipAhk -or $SkipRuntime -or -not $ahk) {
 
 Start-Section '7. Scaffold slots'
 
-foreach ($slotName in $config.slots.PSObject.Properties.Name) {
-    $scriptPath = Get-RepoPath $config.slots.$slotName.script
-    if (-not (Test-Path -LiteralPath $scriptPath)) {
-        Add-Failure "slot '$slotName' script missing" $scriptPath
-        continue
-    }
-    & pwsh -NoProfile -ExecutionPolicy Bypass -File $scriptPath *> $null
-    if ($LASTEXITCODE -eq 0) {
-        Write-Check -Status PASS -Name "runs: $slotName"
-    } else {
-        Add-Failure "slot '$slotName' exited $LASTEXITCODE" $scriptPath
+if (-not $config) {
+    Write-Check -Status INFO -Name 'skipped' -Detail 'config did not parse'
+} else {
+    $powershell = Find-PowerShell
+    foreach ($slotName in $config.slots.PSObject.Properties.Name) {
+        $scriptPath = Get-RepoPath $config.slots.$slotName.script
+        if (-not (Test-Path -LiteralPath $scriptPath)) {
+            Add-Failure "slot '$slotName' script missing" $scriptPath
+            continue
+        }
+        & $powershell -NoProfile -ExecutionPolicy Bypass -File $scriptPath *> $null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Check -Status PASS -Name "runs: $slotName"
+        } else {
+            Add-Failure "slot '$slotName' exited $LASTEXITCODE" $scriptPath
+        }
     }
 }
 

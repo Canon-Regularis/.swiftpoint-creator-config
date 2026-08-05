@@ -52,6 +52,22 @@ function Find-AutoHotkeyV2 {
     return $null
 }
 
+# Mirrors PwshPath() in the relay, so checks exercise the scaffolds with the
+# same interpreter that will really run them. PowerShell 7 is not present on a
+# stock Windows install, so 'pwsh' cannot be assumed to be on PATH.
+function Find-PowerShell {
+    $candidates = @(
+        "$env:ProgramFiles\PowerShell\7\pwsh.exe"
+        "$env:LOCALAPPDATA\Microsoft\WindowsApps\pwsh.exe"
+    )
+    foreach ($candidate in $candidates) {
+        if ($candidate -and (Test-Path -LiteralPath $candidate)) { return $candidate }
+    }
+    $onPath = Get-Command 'pwsh.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($onPath) { return $onPath.Source }
+    return "$env:WinDir\System32\WindowsPowerShell\v1.0\powershell.exe"
+}
+
 function Get-RelayProcess {
     $scriptPath = Get-RepoPath 'relay/swiftpoint-relay.ahk'
     $leaf = Split-Path -Leaf $scriptPath
