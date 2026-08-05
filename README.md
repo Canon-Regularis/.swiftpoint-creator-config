@@ -57,6 +57,23 @@ pwsh -File tools/generate.ps1
 This regenerates `relay/bindings.generated.ahk` and `docs/control-panel-entry-sheet.md`.
 `verify.ps1` fails if they drift out of sync with the config.
 
+## Checks
+
+```powershell
+pwsh -File tools/ci.ps1
+```
+
+The same script CI runs: JSON parses, PowerShell parses, PSScriptAnalyzer, the committed
+generated files match a fresh `generate.ps1` run, the relay compiles under AutoHotkey
+`/validate`, the relay starts and registers the expected chord count, every scaffold stub
+exits 0, and every relative markdown link resolves.
+
+The runtime check restarts the relay. One that was already running is put back in normal mode
+afterwards.
+
+CI runs on `windows-latest` for every push and pull request. Tagging `v*` runs the same
+checks and, if they pass, publishes a bundle built by `tools/pack.ps1`.
+
 ## Layout
 
 | Path | |

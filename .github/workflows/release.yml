@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version string for the bundle filename
+        required: true
+        default: v0.0.0-manual
+
+permissions:
+  contents: read
+
+jobs:
+  # Same checks as CI. A tag that fails them produces no release.
+  check:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    name: Bundle and publish
+    needs: check
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          $version = if ($env:GITHUB_REF -like 'refs/tags/*') {
+            $env:GITHUB_REF -replace '^refs/tags/', ''
+          } else {
+            '${{ github.event.inputs.version }}'
+          }
+          if (-not $version) { throw 'Could not resolve a version.' }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "version: $version"
+
+      - name: Build bundle
+        shell: pwsh
+        run: pwsh -File tools/pack.ps1 -Version '${{ steps.version.outputs.version }}'
+
+      - name: Publish release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = '${{ steps.version.outputs.version }}'
+          $zip = "dist/swiftpoint-creator-config-$version.zip"
+          if (-not (Test-Path -LiteralPath $zip)) { throw "Bundle not found: $zip" }
+
+          $notes = @"
+          Install:
+
+          1. Unzip.
+          2. ``pwsh -File tools/install.ps1``
+          3. Program the three chords into the mouse: ``docs/control-panel-entry-sheet.md``
+          4. Press ``Win+Shift+S`` once and set the capture mode to Full screen.
+          5. ``pwsh -File tools/verify.ps1 -Test``
+          "@
+
+          gh release create $version $zip --title $version --notes $notes

@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AHK_VERSION: 2.0.26
+
+jobs:
+  check:
+    name: Checks
+    # Windows-only by necessity: AutoHotkey, the Snipping Tool shortcuts and the
+    # Control Panel are all Windows.
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache PowerShell modules
+        uses: actions/cache@v4
+        with:
+          path: ~\Documents\PowerShell\Modules
+          key: psmodules-${{ runner.os }}-psscriptanalyzer-v1
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) {
+            Install-Module PSScriptAnalyzer -Scope CurrentUser -Force -SkipPublisherCheck
+          }
+          (Get-Module -ListAvailable PSScriptAnalyzer | Select-Object -First 1).Version.ToString()
+
+      - name: Install AutoHotkey v2
+        shell: pwsh
+        run: |
+          # The zip, not the installer: no setup semantics to get wrong, and the
+          # exes sit at the zip root. This target is one of the paths
+          # Find-AutoHotkeyV2 already probes.
+          $target = Join-Path $env:LOCALAPPDATA 'Programs\AutoHotkey\v2'
+          New-Item -ItemType Directory -Force -Path $target | Out-Null
+
+          $zip = Join-Path $env:RUNNER_TEMP 'autohotkey.zip'
+          $url = "https://github.com/AutoHotkey/AutoHotkey/releases/download/v$env:AHK_VERSION/AutoHotkey_$env:AHK_VERSION.zip"
+          Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+          Expand-Archive -Path $zip -DestinationPath $target -Force
+
+          $exe = Join-Path $target 'AutoHotkey64.exe'
+          if (-not (Test-Path -LiteralPath $exe)) {
+            throw "AutoHotkey64.exe not found at $exe after extraction."
+          }
+          Write-Host "AutoHotkey v$env:AHK_VERSION at $exe"
+
+      - name: Run checks
+        shell: pwsh
+        # Step 6 starts the relay and asserts it registers its chords. If the
+        # runner turns out not to allow hotkey registration, add -SkipRuntime
+        # here; every other check is unaffected.
+        run: pwsh -File tools/ci.ps1
+
+      - name: Upload relay log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relay-log
+          path: logs/
+          if-no-files-found: ignore
+          retention-days: 7
