@@ -12,7 +12,7 @@ TIMING := Map(
 
 RELAY := Map(
     "runHidden", true,
-    "logFile",   "C:\Users\Matth\Projects\.swiftpoint-creator-config\logs\relay.log")
+    "logFile",   "logs\relay.log")
 
 SNIP := Map(
     "forceMode",   false,
@@ -31,13 +31,13 @@ BINDINGS := Map(
             "slot",    "vite-react-ts",
             "label",   "Vite + React + TypeScript",
             "gesture", "single tap",
-            "script",  "C:\Users\Matth\Projects\.swiftpoint-creator-config\scaffolds\vite-react-ts.ps1"),
+            "script",  "scaffolds\vite-react-ts.ps1"),
         "secondary", Map(
             "action",  "scaffold",
             "slot",    "nextjs",
             "label",   "Next.js",
             "gesture", "double tap",
-            "script",  "C:\Users\Matth\Projects\.swiftpoint-creator-config\scaffolds\nextjs.ps1")
+            "script",  "scaffolds\nextjs.ps1")
     ),
     "^!+F14", Map(
         "id",      "undo",
@@ -50,13 +50,13 @@ BINDINGS := Map(
             "slot",    "sveltekit",
             "label",   "SvelteKit",
             "gesture", "single tap",
-            "script",  "C:\Users\Matth\Projects\.swiftpoint-creator-config\scaffolds\sveltekit.ps1"),
+            "script",  "scaffolds\sveltekit.ps1"),
         "secondary", Map(
             "action",  "scaffold",
             "slot",    "astro",
             "label",   "Astro",
             "gesture", "double tap",
-            "script",  "C:\Users\Matth\Projects\.swiftpoint-creator-config\scaffolds\astro.ps1")
+            "script",  "scaffolds\astro.ps1")
     ),
     "^!+F15", Map(
         "id",      "screenshot",

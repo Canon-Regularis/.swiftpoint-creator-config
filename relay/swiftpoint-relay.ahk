@@ -10,6 +10,10 @@
 
 Persistent()
 
+; Paths in bindings.generated.ahk are repo-relative so the generated file stays
+; machine-independent. This script lives in relay/, one level below the root.
+REPO_ROOT := RegExReplace(A_ScriptDir, "\\[^\\]+$")
+
 TEST_MODE := false
 for arg in A_Args {
     if (arg = "--test" || arg = "-t")
@@ -106,7 +110,7 @@ Fire(cfg, which) {
 
 RunScaffold(action) {
     global RELAY
-    script := action["script"]
+    script := RepoPath(action["script"])
     if (!FileExist(script)) {
         Notify("Scaffold script missing", script)
         WriteLog("ERROR missing script: " script)
@@ -156,6 +160,11 @@ SnipRecord() {
 
 ; ---------------------------------------------------------------------------
 
+RepoPath(relative) {
+    global REPO_ROOT
+    return REPO_ROOT "\" relative
+}
+
 PwshPath() {
     static cached := ""
     if (cached != "")
@@ -175,7 +184,7 @@ PwshPath() {
 WriteLog(message) {
     global RELAY
     try {
-        logFile := RELAY["logFile"]
+        logFile := RepoPath(RELAY["logFile"])
         directory := RegExReplace(logFile, "\\[^\\]+$")
         if (directory != "" && !DirExist(directory))
             DirCreate(directory)
@@ -206,10 +215,11 @@ ShowBindings() {
 
 OpenLog() {
     global RELAY
-    if (FileExist(RELAY["logFile"]))
-        Run('notepad.exe "' RELAY["logFile"] '"')
+    logFile := RepoPath(RELAY["logFile"])
+    if (FileExist(logFile))
+        Run('notepad.exe "' logFile '"')
     else
-        Notify("No log yet", RELAY["logFile"])
+        Notify("No log yet", logFile)
 }
 
 InitTray() {

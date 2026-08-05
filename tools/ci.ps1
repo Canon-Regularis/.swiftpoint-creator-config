@@ -150,7 +150,7 @@ try {
     foreach ($path in $generatedPaths) {
         $relative = $path.Substring($RepoRoot.Length + 1)
         $after = Get-Content -Raw -LiteralPath $path
-        if ($before[$path] -eq $after) {
+        if (Test-ContentEqual -Left $before[$path] -Right $after) {
             Write-Check -Status PASS -Name "current: $relative"
         } else {
             Add-Failure "stale: $relative" 'run tools/generate.ps1 and commit the result'
@@ -158,6 +158,16 @@ try {
     }
 } catch {
     Add-Failure 'generate.ps1 failed' $_.Exception.Message
+}
+
+# An absolute path here means the committed file carries one machine's layout:
+# a clone would point at the author's home directory, and the byte-comparison
+# above could never pass anywhere else.
+$generatedAhk = Get-Content -Raw -LiteralPath (Get-RepoPath 'relay/bindings.generated.ahk')
+if ($generatedAhk -match '"[A-Za-z]:\\' -or $generatedAhk -match '"\\\\') {
+    Add-Failure 'absolute path in generated file' 'paths must stay repo-relative — see ConvertTo-EmittedPath in tools/generate.ps1'
+} else {
+    Write-Check -Status PASS -Name 'generated paths are repo-relative'
 }
 
 # --- 5. AutoHotkey ----------------------------------------------------------

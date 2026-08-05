@@ -11,6 +11,8 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+. "$PSScriptRoot/_common.ps1"
+
 $RepoRoot   = Split-Path -Parent $PSScriptRoot
 $ConfigPath = Join-Path $RepoRoot 'config/bindings.json'
 $AhkOut     = Join-Path $RepoRoot 'relay/bindings.generated.ahk'
@@ -51,8 +53,11 @@ function Get-DisplayChord($Chord) {
     return (@($Chord.mods) + @($Chord.key)) -join ' + '
 }
 
-function Resolve-RepoPath([string]$Relative) {
-    return (Join-Path $RepoRoot $Relative) -replace '/', '\'
+# Emitted paths stay repo-relative; the relay resolves them against its own
+# location at runtime. Absolute paths would bake one machine's layout into a
+# committed file, so a clone would point at the author's home directory.
+function ConvertTo-EmittedPath([string]$Relative) {
+    return $Relative -replace '/', '\'
 }
 
 # --- load config ------------------------------------------------------------
@@ -62,7 +67,7 @@ if (-not (Test-Path $ConfigPath)) {
 }
 
 $config     = Get-Content -Raw -LiteralPath $ConfigPath | ConvertFrom-Json
-$sourceHash = (Get-FileHash -LiteralPath $ConfigPath -Algorithm SHA256).Hash
+$sourceHash = Get-ConfigHash -Path $ConfigPath
 
 $activeSet = $config.activeChordSet
 if (-not $config.chordSets.PSObject.Properties.Name.Contains($activeSet)) {
@@ -88,7 +93,7 @@ function Get-ActionInfo($Action) {
                 Kind   = 'scaffold'
                 Slot   = $slot
                 Label  = $slotCfg.description
-                Script = Resolve-RepoPath $slotCfg.script
+                Script = ConvertTo-EmittedPath $slotCfg.script
             }
         }
         'snipScreenshot' {
@@ -163,7 +168,7 @@ $ahk.Add("    `"modifierReleaseMs`", $($config.timing.modifierReleaseMs))")
 $ahk.Add('')
 $ahk.Add('RELAY := Map(')
 $ahk.Add("    `"runHidden`", $(ConvertTo-AhkBool $config.relay.runHidden),")
-$ahk.Add("    `"logFile`",   `"$(ConvertTo-AhkString (Resolve-RepoPath $config.relay.logFile))`")")
+$ahk.Add("    `"logFile`",   `"$(ConvertTo-AhkString (ConvertTo-EmittedPath $config.relay.logFile))`")")
 $ahk.Add('')
 $ahk.Add('SNIP := Map(')
 $ahk.Add("    `"forceMode`",   $(ConvertTo-AhkBool $config.snip.forceMode),")

@@ -64,9 +64,13 @@ pwsh -File tools/ci.ps1
 ```
 
 The same script CI runs: JSON parses, PowerShell parses, PSScriptAnalyzer, the committed
-generated files match a fresh `generate.ps1` run, the relay compiles under AutoHotkey
-`/validate`, the relay starts and registers the expected chord count, every scaffold stub
-exits 0, and every relative markdown link resolves.
+generated files match a fresh `generate.ps1` run and contain no absolute paths, the relay
+compiles under AutoHotkey `/validate`, the relay starts and registers the expected chord
+count, every scaffold stub exits 0, and every relative markdown link resolves.
+
+Generation is machine-independent: paths in `relay/bindings.generated.ahk` are repo-relative
+and the relay resolves them against its own location, and the config hash ignores line-ending
+style. A checkout on any machine regenerates byte-identical files.
 
 The runtime check restarts the relay. One that was already running is put back in normal mode
 afterwards.

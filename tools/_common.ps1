@@ -64,6 +64,30 @@ function Get-RelayProcess {
     return ,$found
 }
 
+# Hash of the config's content with line endings normalised.
+#
+# Not Get-FileHash: git checkout style (core.autocrlf) decides whether the
+# working copy has LF or CRLF, so raw bytes hash differently on different
+# machines and the sync check fails for no real reason.
+function Get-ConfigHash {
+    param([Parameter(Mandatory)][string]$Path)
+
+    $normalized = (Get-Content -Raw -LiteralPath $Path) -replace "`r`n", "`n"
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($normalized)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        return [System.BitConverter]::ToString($sha.ComputeHash($bytes)).Replace('-', '')
+    } finally {
+        $sha.Dispose()
+    }
+}
+
+# Content equality ignoring line-ending style, for the same reason.
+function Test-ContentEqual {
+    param([string]$Left, [string]$Right)
+    return (($Left -replace "`r`n", "`n") -eq ($Right -replace "`r`n", "`n"))
+}
+
 # True when bindings.generated.ahk was generated from the current bindings.json.
 function Test-BindingsInSync {
     $configPath    = Get-RepoPath 'config/bindings.json'
@@ -72,7 +96,7 @@ function Test-BindingsInSync {
     if (-not (Test-Path -LiteralPath $generatedPath)) { return $false }
     if (-not (Test-Path -LiteralPath $configPath))    { return $false }
 
-    $currentHash = (Get-FileHash -LiteralPath $configPath -Algorithm SHA256).Hash
+    $currentHash = Get-ConfigHash -Path $configPath
     $generated   = Get-Content -Raw -LiteralPath $generatedPath
 
     if ($generated -match 'BINDINGS_SOURCE_HASH\s*:=\s*"([0-9A-Fa-f]+)"') {
