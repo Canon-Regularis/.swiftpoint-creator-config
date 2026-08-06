@@ -53,6 +53,27 @@ foreach ($slotName in $config.slots.PSObject.Properties.Name) {
     }
 }
 
+$swiftpoint = Get-SwiftpointDevice
+if ($swiftpoint.Count -eq 0) {
+    Write-Check -Status WARN -Name 'Swiftpoint mouse not detected' -Detail 'nothing will emit the chords until it is plugged in'
+    $warnings++
+} elseif (@($swiftpoint | Where-Object { $_.Class -eq 'Keyboard' }).Count -eq 0) {
+    # The chord is sent as keystrokes, so without this interface the mouse
+    # cannot deliver it however the Control Panel is configured.
+    Write-Check -Status WARN -Name 'Swiftpoint connected but exposes no keyboard interface' -Detail 'the chord is sent as keystrokes and needs one'
+    $warnings++
+} else {
+    Write-Check -Status PASS -Name 'Swiftpoint mouse connected' -Detail "$($swiftpoint.Count) interfaces, including the keyboard one that carries the chord"
+}
+
+$controlPanel = @(Get-Process -ErrorAction SilentlyContinue |
+                  Where-Object { $_.ProcessName -match 'Swiftpoint' })
+if ($controlPanel.Count -gt 0) {
+    Write-Check -Status INFO -Name 'Swiftpoint Control Panel running' -Detail 'needed to program the chords, not to use them'
+} else {
+    Write-Check -Status INFO -Name 'Swiftpoint Control Panel not running' -Detail 'mappings live in the mouse, so this is only needed to change them'
+}
+
 $build = [System.Environment]::OSVersion.Version.Build
 if ($build -ge 22621) {
     Write-Check -Status PASS -Name 'Windows build supports Win+Shift+R' -Detail "build $build (needs 22621+)"

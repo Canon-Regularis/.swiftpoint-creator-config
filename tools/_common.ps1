@@ -68,6 +68,19 @@ function Find-PowerShell {
     return "$env:WinDir\System32\WindowsPowerShell\v1.0\powershell.exe"
 }
 
+# Present Swiftpoint HID interfaces. VID_214E is Swiftpoint's vendor ID; the
+# Creator enumerates several interfaces, and the Keyboard one is what actually
+# carries the chord to Windows.
+# Status is filtered to OK so ghost entries for previously connected Swiftpoint
+# devices do not read as connected.
+function Get-SwiftpointDevice {
+    $devices = @(
+        Get-PnpDevice -ErrorAction SilentlyContinue |
+        Where-Object { $_.InstanceId -match 'VID_214E' -and $_.Status -eq 'OK' }
+    )
+    return ,$devices
+}
+
 function Get-RelayProcess {
     $scriptPath = Get-RepoPath 'relay/swiftpoint-relay.ahk'
     $leaf = Split-Path -Leaf $scriptPath
