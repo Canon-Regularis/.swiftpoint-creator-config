@@ -1,7 +1,13 @@
 # Swiftpoint Creator macros
 
-Task View and Undo scaffold frontend frameworks. The screenshot button also records. Both
-capture paths go through the Windows Snipping Tool.
+Task View and Undo scaffold frontend frameworks. The screenshot button captures the whole
+screen to the clipboard, and held down it starts and stops a Snipping Tool recording.
+
+The screenshot does not go through the Snipping Tool. Its overlay opens in whatever mode was
+last used and ignores injected keystrokes, so no macro can force a full-screen capture through
+it - every keyboard route was tested and none works. The relay grabs the screen directly
+instead, which needs no setup and cannot silently change behaviour. Recording still uses
+`Win+Shift+R`, which does work as a plain keystroke.
 
 Each button sends one fixed chord and nothing else. An AutoHotkey v2 relay reads the chord,
 resolves tap / double-tap / hold, and acts. The mouse is programmed once; everything after
@@ -18,7 +24,7 @@ only, and none of these three buttons is either.
 | Task View | double tap | Scaffold Next.js |
 | Undo | tap | Scaffold SvelteKit |
 | Undo | double tap | Scaffold Astro |
-| Screenshot | tap | Full-screen screenshot (`Win+Shift+S`) |
+| Screenshot | tap | Full-screen capture to clipboard |
 | Screenshot | hold ≥400ms | Start/stop recording (`Win+Shift+R`) |
 
 Chords are `Ctrl+Alt+Shift+F13` / `F14` / `F15`. F13–F15 have no physical key, so nothing
@@ -34,9 +40,7 @@ Installs AutoHotkey v2, generates the derived files, registers the relay to star
 launches it. Then:
 
 1. Program the three chords — [docs/control-panel-entry-sheet.md](docs/control-panel-entry-sheet.md).
-2. Press `Win+Shift+S` and set the mode to **Full screen**. The overlay keeps the last-used
-   mode, which is why the screenshot macro is a single keystroke with no menu navigation.
-3. `pwsh -File tools/verify.ps1 -Test`
+2. `pwsh -File tools/verify.ps1 -Test`
 
 ## Adding scaffold code
 
@@ -88,9 +92,10 @@ checks and, if they pass, publishes a bundle built by `tools/pack.ps1`.
 | Path | |
 |---|---|
 | `config/bindings.json` | Source of truth |
-| `relay/swiftpoint-relay.ahk` | Gesture resolution, Snipping Tool sequences |
+| `relay/swiftpoint-relay.ahk` | Gesture resolution and dispatch |
 | `relay/bindings.generated.ahk` | Generated |
 | `scaffolds/` | Slot scripts and shared helpers |
+| `capture/capture-fullscreen.ps1` | Full-screen capture to clipboard, optional PNG |
 | `tools/generate.ps1` | Regenerates derived files |
 | `tools/install.ps1` | Setup |
 | `tools/verify.ps1` | Checks, and test mode |
@@ -108,7 +113,7 @@ instead of acting.
 | Tooltip from keyboard, not from mouse | The Control Panel isn't emitting the chord. Its keyboard recorder can't capture F13–F15, so pick them from the key list. If F13–F24 aren't offered, set `activeChordSet` to `"f9"` and regenerate. |
 | Two tooltips from one gesture | `timing.doubleTapMs` too short. |
 | Hold never triggers | Chord isn't staying down. Turn off Auto-Release Outputs for that mapping, or set the button's `mode` to `"tapDouble"` and regenerate. |
-| Screenshot captures a region | Overlay's last-used mode isn't Full screen. Set it once, or set `snip.forceMode` to `true`. |
+| Screenshot does nothing | Check `logs/capture.log`. The capture runs as a PowerShell script, so a blocked interpreter or a locked clipboard shows up there. |
 | `Win+Shift+R` does nothing | Needs Windows 11 build 22621+. |
 
 ## Direct import (.spcf)

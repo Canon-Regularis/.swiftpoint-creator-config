@@ -65,7 +65,7 @@ $snip = Get-AppxPackage -Name 'Microsoft.ScreenSketch' -ErrorAction SilentlyCont
 if ($snip) {
     Write-Check -Status PASS -Name 'Snipping Tool present' -Detail "v$($snip.Version)"
 } else {
-    Write-Check -Status WARN -Name 'Snipping Tool not detected' -Detail 'Win+Shift+S / Win+Shift+R may not work'
+    Write-Check -Status WARN -Name 'Snipping Tool not detected' -Detail 'Win+Shift+R recording may not work'
     $warnings++
 }
 

@@ -98,6 +98,5 @@ if (-not $NoStart) {
 Write-Host ''
 Write-Host 'Next:' -ForegroundColor Cyan
 Write-Host '  1. Program the three chords - docs/control-panel-entry-sheet.md'
-Write-Host '  2. Press Win+Shift+S and set the mode to Full screen.'
-Write-Host '  3. pwsh -File tools/verify.ps1 -Test'
+Write-Host '  2. pwsh -File tools/verify.ps1 -Test'
 Write-Host ''

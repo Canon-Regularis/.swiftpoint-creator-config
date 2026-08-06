@@ -34,6 +34,7 @@ $include = @(
     'config'
     'relay'
     'scaffolds'
+    'capture'
     'tools'
     'docs'
     'README.md'

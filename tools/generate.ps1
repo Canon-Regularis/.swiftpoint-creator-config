@@ -75,12 +75,6 @@ if (@($config.chordSets.PSObject.Properties.Name) -notcontains $activeSet) {
 }
 $chords = $config.chordSets.$activeSet
 
-# The relay presses Right this many times to reach captureMode in the Alt+M menu.
-$modeIndex = [array]::IndexOf([string[]]$config.snip.modeOrder, [string]$config.snip.captureMode)
-if ($modeIndex -lt 0) {
-    throw "snip.captureMode '$($config.snip.captureMode)' is not present in snip.modeOrder."
-}
-
 function Get-ActionInfo($Action) {
     switch ($Action.action) {
         'scaffold' {
@@ -96,10 +90,11 @@ function Get-ActionInfo($Action) {
                 Script = ConvertTo-EmittedPath $slotCfg.script
             }
         }
-        'snipScreenshot' {
+        'captureScreen' {
             return [pscustomobject]@{
-                Kind = 'snipScreenshot'; Slot = ''; Script = ''
-                Label = 'Full-screen screenshot (Win+Shift+S)'
+                Kind = 'captureScreen'; Slot = ''
+                Script = ConvertTo-EmittedPath $config.screenshot.script
+                Label  = 'Full-screen capture to clipboard'
             }
         }
         'snipRecord' {
@@ -109,7 +104,7 @@ function Get-ActionInfo($Action) {
             }
         }
         default {
-            throw "Unknown action '$($Action.action)'. Expected: scaffold, snipScreenshot, snipRecord."
+            throw "Unknown action '$($Action.action)'. Expected: scaffold, captureScreen, snipRecord."
         }
     }
 }
@@ -162,18 +157,14 @@ $ahk.Add('')
 $ahk.Add('TIMING := Map(')
 $ahk.Add("    `"doubleTapMs`",       $($config.timing.doubleTapMs),")
 $ahk.Add("    `"holdMs`",            $($config.timing.holdMs),")
-$ahk.Add("    `"snipOverlayMs`",     $($config.timing.snipOverlayMs),")
-$ahk.Add("    `"snipMenuMs`",        $($config.timing.snipMenuMs),")
 $ahk.Add("    `"modifierReleaseMs`", $($config.timing.modifierReleaseMs))")
 $ahk.Add('')
 $ahk.Add('RELAY := Map(')
 $ahk.Add("    `"runHidden`", $(ConvertTo-AhkBool $config.relay.runHidden),")
 $ahk.Add("    `"logFile`",   `"$(ConvertTo-AhkString (ConvertTo-EmittedPath $config.relay.logFile))`")")
 $ahk.Add('')
-$ahk.Add('SNIP := Map(')
-$ahk.Add("    `"forceMode`",   $(ConvertTo-AhkBool $config.snip.forceMode),")
-$ahk.Add("    `"captureMode`", `"$(ConvertTo-AhkString $config.snip.captureMode)`",")
-$ahk.Add("    `"modeIndex`",   $modeIndex)")
+$ahk.Add('SCREENSHOT := Map(')
+$ahk.Add("    `"saveDir`", `"$(ConvertTo-AhkString $config.screenshot.saveDir)`")")
 $ahk.Add('')
 $ahk.Add('BINDINGS := Map(')
 
@@ -247,7 +238,6 @@ $md.Add('   3. Click the output name (reads **Do Nothing**).')
 $md.Add('   4. **Output Type**, then a keyboard output.')
 $md.Add('   5. Enter the chord.')
 $md.Add('4. Confirm the mappings are in onboard flash (automatic in Control Panel 3.1.1.0+).')
-$md.Add('5. Press `Win+Shift+S` once and set the mode to **Full screen**.')
 $md.Add('')
 
 $holdButtons = @($buttons | Where-Object { $_.Mode -eq 'tapHold' })

@@ -303,6 +303,38 @@ if (-not $config) {
             Add-Failure "slot '$slotName' exited $LASTEXITCODE" $scriptPath
         }
     }
+
+    # Capture to a temp file rather than the clipboard, so a check run does not
+    # clobber whatever the user has copied.
+    $capturePath = Get-RepoPath $config.screenshot.script
+    if (-not (Test-Path -LiteralPath $capturePath)) {
+        Add-Failure 'screenshot capture script missing' $capturePath
+    } else {
+        $shotDir = Join-Path ([System.IO.Path]::GetTempPath()) ("swiftpoint-shot-" + [guid]::NewGuid().ToString('N'))
+        try {
+            & $powershell -NoProfile -ExecutionPolicy Bypass -File $capturePath -NoClipboard -SaveDir $shotDir *> $null
+            $shot = @(Get-ChildItem -Path $shotDir -Filter '*.png' -ErrorAction SilentlyContinue)
+            if ($LASTEXITCODE -eq 0 -and $shot.Count -eq 1) {
+                Add-Type -AssemblyName System.Windows.Forms
+                $expected = [System.Windows.Forms.SystemInformation]::VirtualScreen
+                Add-Type -AssemblyName System.Drawing
+                $image = [System.Drawing.Image]::FromFile($shot[0].FullName)
+                try {
+                    if ($image.Width -eq $expected.Width -and $image.Height -eq $expected.Height) {
+                        Write-Check -Status PASS -Name 'full-screen capture' -Detail "$($image.Width)x$($image.Height)"
+                    } else {
+                        Add-Failure 'capture is not the full virtual screen' "got $($image.Width)x$($image.Height), expected $($expected.Width)x$($expected.Height)"
+                    }
+                } finally {
+                    $image.Dispose()
+                }
+            } else {
+                Add-Failure "screenshot capture exited $LASTEXITCODE" "produced $($shot.Count) png(s)"
+            }
+        } finally {
+            Remove-Item -LiteralPath $shotDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
 }
 
 # --- 8. markdown links resolve ----------------------------------------------

@@ -112,28 +112,38 @@ Fire(cfg, which) {
     WriteLog(cfg["id"] " / " action["gesture"] " -> " action["label"])
 
     switch action["action"] {
-        case "scaffold":       RunScaffold(action)
-        case "snipScreenshot": SnipScreenshot()
-        case "snipRecord":     SnipRecord()
-        default:               WriteLog("ERROR unknown action: " action["action"])
+        case "scaffold":      RunRepoScript(action["script"])
+        case "captureScreen": CaptureScreen(action)
+        case "snipRecord":    SnipRecord()
+        default:              WriteLog("ERROR unknown action: " action["action"])
     }
 }
 
-RunScaffold(action) {
+; Launches a PowerShell script from the repo. Shared by the scaffold slots and
+; the screen capture.
+RunRepoScript(relativeScript, extraArgs := "") {
     global RELAY
-    script := RepoPath(action["script"])
+    script := RepoPath(relativeScript)
     if (!FileExist(script)) {
-        Notify("Scaffold script missing", script)
+        Notify("Script missing", script)
         WriteLog("ERROR missing script: " script)
         return
     }
-    command := Format('"{1}" -NoProfile -ExecutionPolicy Bypass -File "{2}"', PwshPath(), script)
+    command := Format('"{1}" -NoProfile -ExecutionPolicy Bypass -File "{2}"{3}', PwshPath(), script, extraArgs)
     try {
         Run(command, , RELAY["runHidden"] ? "Hide" : "")
     } catch as err {
-        Notify("Scaffold failed to launch", err.Message)
+        Notify("Failed to launch", err.Message)
         WriteLog("ERROR launching " script ": " err.Message)
     }
+}
+
+; No WaitModifiersUp here: this sends no keystrokes, so held modifiers are
+; irrelevant and the capture happens without waiting on them.
+CaptureScreen(action) {
+    global SCREENSHOT
+    extra := SCREENSHOT["saveDir"] != "" ? Format(' -SaveDir "{1}"', SCREENSHOT["saveDir"]) : ""
+    RunRepoScript(action["script"], extra)
 }
 
 ; The chord's own Ctrl/Alt/Shift can still be down here; sending Win+Shift+S
@@ -143,24 +153,6 @@ WaitModifiersUp() {
     timeout := "T" (TIMING["modifierReleaseMs"] / 1000)
     for key in ["Ctrl", "Alt", "Shift", "LWin"]
         KeyWait(key, timeout)
-}
-
-SnipScreenshot() {
-    global SNIP, TIMING
-    WaitModifiersUp()
-    Send("#+s")
-
-    ; With the overlay's mode set to Full screen by hand, the keystroke above is
-    ; the whole macro. forceMode drives the Alt+M menu instead.
-    if (!SNIP["forceMode"])
-        return
-
-    Sleep(TIMING["snipOverlayMs"])
-    Send("!m")
-    Sleep(TIMING["snipMenuMs"])
-    Loop (SNIP["modeIndex"])     ; parenthesised so it parses as a count, not a Loop sub-command
-        Send("{Right}")
-    Send("{Enter}")
 }
 
 ; Win+Shift+R toggles, so the same gesture starts and stops.

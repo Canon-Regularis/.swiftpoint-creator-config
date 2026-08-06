@@ -23,8 +23,6 @@
     "_comment": "doubleTapMs: how long a tap waits for a second tap, and how long the rest of a tap burst is swallowed after a double fires. Windows' own double-click default is 500ms; a tight window here turns a slightly slow double tap into two single taps, which scaffolds the wrong project twice. holdMs: tap/hold threshold.",
     "doubleTapMs": 400,
     "holdMs": 400,
-    "snipOverlayMs": 400,
-    "snipMenuMs": 120,
     "modifierReleaseMs": 300
   },
 
@@ -33,11 +31,10 @@
     "logFile": "logs/relay.log"
   },
 
-  "snip": {
-    "_comment": "The overlay keeps its last-used mode, so a bare Win+Shift+S captures full screen once you set that mode by hand. forceMode drives the Alt+M menu on every press instead; that menu's layout varies between Snipping Tool builds.",
-    "forceMode": false,
-    "captureMode": "fullscreen",
-    "modeOrder": ["rectangle", "window", "fullscreen", "freeform"]
+  "screenshot": {
+    "_comment": "The relay captures the screen itself. The Snipping Tool overlay opens in whatever mode was last used and ignores injected keystrokes, so no macro can force a full-screen capture through it. The image always goes to the clipboard; set saveDir to also write a timestamped PNG (relative to the repo, or absolute). Empty means clipboard only.",
+    "script": "capture/capture-fullscreen.ps1",
+    "saveDir": ""
   },
 
   "buttons": [
@@ -63,7 +60,7 @@
       "chord": "screenshot",
       "mode": "tapHold",
       "_modeNote": "tapHold needs the chord held down while the button is held, so Auto-Release Outputs must be off for this mapping. If that can't be done, set mode to tapDouble and regenerate.",
-      "primary": { "action": "snipScreenshot" },
+      "primary": { "action": "captureScreen" },
       "secondary": { "action": "snipRecord" }
     }
   ],

@@ -21,7 +21,7 @@ tap / double-tap / hold.
 | Task View | double tap | Next.js |
 | Undo | single tap | SvelteKit |
 | Undo | double tap | Astro |
-| Screenshot | quick tap | Full-screen screenshot (Win+Shift+S) |
+| Screenshot | quick tap | Full-screen capture to clipboard |
 | Screenshot | hold >= 400ms | Start/stop screen recording (Win+Shift+R) |
 
 ## Steps
@@ -35,7 +35,6 @@ tap / double-tap / hold.
    4. **Output Type**, then a keyboard output.
    5. Enter the chord.
 4. Confirm the mappings are in onboard flash (automatic in Control Panel 3.1.1.0+).
-5. Press `Win+Shift+S` once and set the mode to **Full screen**.
 
 ## Buttons needing the chord held
 
