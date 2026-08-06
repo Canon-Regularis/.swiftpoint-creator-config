@@ -1,13 +1,14 @@
 # Swiftpoint Creator macros
 
 Task View and Undo scaffold frontend frameworks. The screenshot button captures the whole
-screen to the clipboard, and held down it starts and stops a Snipping Tool recording.
+screen to the clipboard, and held down it opens the Snipping Tool screen recorder.
 
 The screenshot does not go through the Snipping Tool. Its overlay opens in whatever mode was
 last used and ignores injected keystrokes, so no macro can force a full-screen capture through
 it - every keyboard route was tested and none works. The relay grabs the screen directly
 instead, which needs no setup and cannot silently change behaviour. Recording still uses
-`Win+Shift+R`, which does work as a plain keystroke.
+`Win+Shift+R`: it needs no mode selection, so a plain keystroke reaches it. That opens the
+recorder overlay, where you pick an area and press Start.
 
 Each button sends one fixed chord and nothing else. An AutoHotkey v2 relay reads the chord,
 resolves tap / double-tap / hold, and acts. The mouse is programmed once; everything after
@@ -25,7 +26,7 @@ only, and none of these three buttons is either.
 | Undo | tap | Scaffold SvelteKit |
 | Undo | double tap | Scaffold Astro |
 | Screenshot | tap | Full-screen capture to clipboard |
-| Screenshot | hold ≥400ms | Start/stop recording (`Win+Shift+R`) |
+| Screenshot | hold ≥400ms | Open Snipping Tool screen recorder (`Win+Shift+R`) |
 
 Chords are `Ctrl+Alt+Shift+F13` / `F14` / `F15`. F13–F15 have no physical key, so nothing
 else on the system can collide with them.

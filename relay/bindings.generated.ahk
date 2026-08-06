@@ -69,7 +69,7 @@ BINDINGS := Map(
         "secondary", Map(
             "action",  "snipRecord",
             "slot",    "",
-            "label",   "Start/stop screen recording (Win+Shift+R)",
+            "label",   "Open Snipping Tool screen recorder (Win+Shift+R)",
             "gesture", "hold >= 400ms",
             "script",  "")
     )

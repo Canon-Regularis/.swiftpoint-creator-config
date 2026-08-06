@@ -22,7 +22,7 @@ tap / double-tap / hold.
 | Undo | single tap | SvelteKit |
 | Undo | double tap | Astro |
 | Screenshot | quick tap | Full-screen capture to clipboard |
-| Screenshot | hold >= 400ms | Start/stop screen recording (Win+Shift+R) |
+| Screenshot | hold >= 400ms | Open Snipping Tool screen recorder (Win+Shift+R) |
 
 ## Steps
 
@@ -43,7 +43,7 @@ chord must be pressed on **Press** and released on **Release**. Turn off **Auto-
 Outputs** for this mapping.
 
 If that isn't possible, set this button's `mode` to `"tapDouble"` in
-`config/bindings.json` and re-run `tools/generate.ps1`; `Start/stop screen recording (Win+Shift+R)`
+`config/bindings.json` and re-run `tools/generate.ps1`; `Open Snipping Tool screen recorder (Win+Shift+R)`
 then moves to a double tap.
 
 ## If a button does nothing

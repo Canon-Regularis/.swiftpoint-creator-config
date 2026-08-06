@@ -98,9 +98,12 @@ function Get-ActionInfo($Action) {
             }
         }
         'snipRecord' {
+            # Win+Shift+R opens the recorder overlay for you to pick an area and
+            # press Start. Verified: it does not begin recording by itself, so
+            # do not label it start/stop.
             return [pscustomobject]@{
                 Kind = 'snipRecord'; Slot = ''; Script = ''
-                Label = 'Start/stop screen recording (Win+Shift+R)'
+                Label = 'Open Snipping Tool screen recorder (Win+Shift+R)'
             }
         }
         default {

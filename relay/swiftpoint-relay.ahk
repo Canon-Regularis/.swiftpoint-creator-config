@@ -155,7 +155,9 @@ WaitModifiersUp() {
         KeyWait(key, timeout)
 }
 
-; Win+Shift+R toggles, so the same gesture starts and stops.
+; Opens the Snipping Tool recorder overlay. It does not start recording by
+; itself: you pick an area and press Start. Unlike the screenshot overlay this
+; needs no mode selection, so a plain keystroke is enough.
 SnipRecord() {
     WaitModifiersUp()
     Send("#+r")
