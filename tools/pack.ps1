@@ -3,9 +3,9 @@
     Builds a release bundle: dist/swiftpoint-creator-config-<version>.zip
 
 .DESCRIPTION
-    The bundle is everything needed to install on a fresh machine. Excludes
-    workflow files, runtime output, and any exported .spcf, which is personal
-    device config.
+    The bundle is everything needed to install on a fresh machine. It excludes
+    workflow files, runtime output, any exported .spcf (personal device config)
+    and config/links.local.json (the real contest URLs).
 
 .PARAMETER Version
     Version string for the filename. A leading "v" is kept as given.
@@ -33,7 +33,6 @@ if (-not $OutDir) { $OutDir = Join-Path $RepoRoot 'dist' }
 $include = @(
     'config'
     'relay'
-    'scaffolds'
     'capture'
     'tools'
     'docs'
@@ -56,7 +55,16 @@ try {
         Copy-Item -LiteralPath $source -Destination $bundleRoot -Recurse -Force
     }
 
-    # The generated include must be in the bundle or the relay will not start.
+    # config/ is copied whole, so the gitignored overlay of real contest URLs
+    # comes with it whenever one exists on this machine. It is removed here,
+    # and it is required that no copy of it survives anywhere in the bundle.
+    Remove-Item -LiteralPath (Join-Path $bundleRoot 'config/links.local.json') -Force -ErrorAction SilentlyContinue
+    $leaked = @(Get-ChildItem -Path $bundleRoot -Filter 'links.local.json' -Recurse -File)
+    if ($leaked.Count -gt 0) {
+        throw "links.local.json is still in the bundle: $($leaked[0].FullName)"
+    }
+
+    # The generated include must be in the bundle, or the relay will not start.
     $generated = Join-Path $bundleRoot 'relay/bindings.generated.ahk'
     if (-not (Test-Path -LiteralPath $generated)) {
         throw "relay/bindings.generated.ahk missing. Run tools/generate.ps1 first."
