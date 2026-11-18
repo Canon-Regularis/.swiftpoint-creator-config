@@ -58,7 +58,7 @@ Write-Check -Status PASS -Name 'AutoHotkey v2' -Detail $ahk
 # --- derived files ----------------------------------------------------------
 
 & (Get-RepoPath 'tools/generate.ps1') -Quiet
-Write-Check -Status PASS -Name 'Generated bindings' -Detail 'relay/bindings.generated.ahk, docs/control-panel-entry-sheet.md'
+Write-Check -Status PASS -Name 'Generated bindings' -Detail 'relay/bindings.generated.ahk, docs/control-panel-entry-sheet.md, config/links.local.example.json'
 
 # --- start at login ---------------------------------------------------------
 
@@ -82,7 +82,10 @@ if (-not $NoStartup) {
 # --- launch -----------------------------------------------------------------
 
 if (-not $NoStart) {
-    foreach ($process in Get-RelayProcess) {
+    # Parenthesised so the array is enumerated. Note that the bare call yields
+    # Get-RelayProcess's wrapped array as one item: with no relay running, that
+    # item is an empty array, and .ProcessId throws under StrictMode.
+    foreach ($process in (Get-RelayProcess)) {
         Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
     }
     Start-Process -FilePath $ahk -ArgumentList ('"{0}"' -f $RelayPath) -WorkingDirectory $RepoRoot
@@ -97,6 +100,8 @@ if (-not $NoStart) {
 
 Write-Host ''
 Write-Host 'Next:' -ForegroundColor Cyan
-Write-Host '  1. Program the three chords - docs/control-panel-entry-sheet.md'
-Write-Host '  2. pwsh -File tools/verify.ps1 -Test'
+Write-Host '  1. Program the four profiles - docs/control-panel-entry-sheet.md'
+Write-Host '  2. Optionally, the real contest URLs: copy config/links.local.example.json'
+Write-Host '     to config/links.local.json (gitignored) and fill it in'
+Write-Host '  3. pwsh -File tools/verify.ps1 -Test'
 Write-Host ''
