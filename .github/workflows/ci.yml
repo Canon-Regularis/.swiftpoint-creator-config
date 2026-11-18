@@ -20,7 +20,7 @@ env:
 jobs:
   check:
     name: Checks
-    # Windows-only by necessity: AutoHotkey, the Snipping Tool shortcuts and the
+    # Windows-only by necessity: AutoHotkey, the GDI+ screen capture and the
     # Control Panel are all Windows.
     runs-on: windows-latest
     timeout-minutes: 15
@@ -46,9 +46,9 @@ jobs:
       - name: Install AutoHotkey v2
         shell: pwsh
         run: |
-          # The zip, not the installer: no setup semantics to get wrong, and the
-          # exes sit at the zip root. This target is one of the paths
-          # Find-AutoHotkeyV2 already probes.
+          # The zip, not the installer: there are no setup semantics to get
+          # wrong, and the exes sit at the zip root. Note that this target is one
+          # of the paths Find-AutoHotkeyV2 already probes.
           $target = Join-Path $env:LOCALAPPDATA 'Programs\AutoHotkey\v2'
           New-Item -ItemType Directory -Force -Path $target | Out-Null
 
@@ -65,9 +65,11 @@ jobs:
 
       - name: Run checks
         shell: pwsh
-        # Step 6 starts the relay and asserts it registers its chords. If the
-        # runner turns out not to allow hotkey registration, add -SkipRuntime
-        # here; every other check is unaffected.
+        # Step 6 starts the relay and asserts that it registers its chords;
+        # step 7 drives it with tools/relay-selftest.ahk. Should the runner not
+        # allow hotkey registration, add -SkipRuntime here; should it register
+        # hotkeys but drop injected input, add -SkipSelfTest. Every other check
+        # is unaffected.
         run: pwsh -File tools/ci.ps1
 
       - name: Upload relay log
