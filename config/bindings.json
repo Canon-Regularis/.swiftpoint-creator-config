@@ -1,86 +1,197 @@
 {
-  "version": 1,
-  "_comment": "Source of truth. After editing run: pwsh -File tools/generate.ps1",
+  "version": 2,
+  "_comment": "Source of truth. After any edit, run: pwsh -File tools/generate.ps1. Keys starting with '_' are comments and are ignored.",
 
   "activeChordSet": "f13",
 
   "chordSets": {
     "f13": {
-      "_comment": "F13-F15 have no physical key, so nothing else can collide with them.",
-      "taskView": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F13" },
-      "undo": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F14" },
-      "screenshot": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F15" }
+      "_comment": "One chord per relay action, with no modifiers. F13-F24 have no physical key, so nothing else can collide with them. Note that a held chord with modifiers would hold Ctrl+Alt+Shift down while scrolling a layer, and Ctrl+wheel zooms.",
+      "screenshot": { "mods": [], "key": "F13" },
+      "vscode": { "mods": [], "key": "F14" },
+      "explorer": { "mods": [], "key": "F15" },
+      "github": { "mods": [], "key": "F16" },
+      "turn180": { "mods": [], "key": "F17" },
+      "contestAdmin": { "mods": [], "key": "F18" },
+      "criticalDebug": { "mods": [], "key": "F19" },
+      "staffDiscord": { "mods": [], "key": "F20" },
+      "liveLeaderboard": { "mods": [], "key": "F21" },
+      "navLayer": { "mods": [], "key": "F22" },
+      "debugLayer": { "mods": [], "key": "F23" }
     },
-    "f9": {
-      "_comment": "Fallback if the Control Panel key picker has no F13-F24.",
-      "taskView": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F9" },
-      "undo": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F10" },
-      "screenshot": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F11" }
+    "ctrlAltShift": {
+      "_comment": "Fallback for a Control Panel whose key list has no F13-F24. Note that a click made while a layer trigger is held then carries Ctrl+Alt+Shift, and that these combinations may collide with graphics-driver hotkeys.",
+      "screenshot": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F1" },
+      "vscode": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F2" },
+      "explorer": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F3" },
+      "github": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F4" },
+      "turn180": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F5" },
+      "contestAdmin": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F6" },
+      "criticalDebug": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F7" },
+      "staffDiscord": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F8" },
+      "liveLeaderboard": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F9" },
+      "navLayer": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F10" },
+      "debugLayer": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F11" }
     }
   },
 
   "timing": {
-    "_comment": "doubleTapMs: how long a tap waits for a second tap, and how long the rest of a tap burst is swallowed after a double fires. Windows' own double-click default is 500ms; a tight window here turns a slightly slow double tap into two single taps, which scaffolds the wrong project twice. holdMs: tap/hold threshold.",
-    "doubleTapMs": 400,
-    "holdMs": 400,
-    "modifierReleaseMs": 300
+    "_comment": "repeatWindowMs: a held key auto-repeats its press, so a press of the same chord within this window of the last one is a repeat, not a new press. It must exceed the longest Windows repeat delay (1000ms). layerTimeoutMs: a layer that sees neither a wheel event nor a key repeat for this long is assumed to have lost its release, and is left.",
+    "repeatWindowMs": 1100,
+    "layerTimeoutMs": 10000
   },
 
   "relay": {
     "runHidden": true,
-    "logFile": "logs/relay.log"
+    "logFile": "logs/relay.log",
+    "linksFile": "config/links.local.json"
   },
 
   "screenshot": {
-    "_comment": "The relay captures the screen itself. The Snipping Tool overlay opens in whatever mode was last used and ignores injected keystrokes, so no macro can force a full-screen capture through it. The image always goes to the clipboard; set saveDir to also write a timestamped PNG (relative to the repo, or absolute). Empty means clipboard only.",
+    "_comment": "The relay captures the screen itself; the Snipping Tool overlay ignores injected keystrokes. format is jpg or png; a jpg is written at the GDI+ default quality. Empty saveDir means Pictures\\Screenshots. A relative path resolves against the repo; %VAR% is expanded.",
     "script": "capture/capture-fullscreen.ps1",
-    "saveDir": ""
+    "format": "jpg",
+    "saveDir": "",
+    "clipboard": true
   },
 
-  "buttons": [
-    {
-      "id": "taskView",
-      "label": "Task View",
-      "chord": "taskView",
-      "mode": "tapDouble",
-      "primary": { "action": "scaffold", "slot": "vite-react-ts" },
-      "secondary": { "action": "scaffold", "slot": "nextjs" }
-    },
-    {
-      "id": "undo",
-      "label": "Undo",
-      "chord": "undo",
-      "mode": "tapDouble",
-      "primary": { "action": "scaffold", "slot": "sveltekit" },
-      "secondary": { "action": "scaffold", "slot": "astro" }
-    },
-    {
-      "id": "screenshot",
-      "label": "Screenshot",
-      "chord": "screenshot",
-      "mode": "tapHold",
-      "_modeNote": "tapHold needs the chord held down while the button is held, so Auto-Release Outputs must be off for this mapping. If that can't be done, set mode to tapDouble and regenerate.",
-      "primary": { "action": "captureScreen" },
-      "secondary": { "action": "snipRecord" }
-    }
-  ],
+  "turn": {
+    "_comment": "Relative mouse counts for a 180 degree turn. 1200 is exact at Minecraft's default sensitivity (100%); calibrate as described in docs/control-panel-entry-sheet.md. steps > 1 spreads the move over several events, stepDelayMs apart.",
+    "counts": 1200,
+    "steps": 1,
+    "stepDelayMs": 0
+  },
 
-  "slots": {
-    "vite-react-ts": {
-      "script": "scaffolds/vite-react-ts.ps1",
-      "description": "Vite + React + TypeScript"
+  "actions": {
+    "screenshot": { "kind": "captureScreen", "label": "Full-screen screenshot (.jpg)" },
+    "vscode": {
+      "kind": "launch",
+      "label": "Open VS Code",
+      "targets": [
+        "%LOCALAPPDATA%\\Programs\\Microsoft VS Code\\Code.exe",
+        "%ProgramFiles%\\Microsoft VS Code\\Code.exe",
+        "code"
+      ]
     },
-    "nextjs": {
-      "script": "scaffolds/nextjs.ps1",
-      "description": "Next.js"
+    "explorer": { "kind": "launch", "label": "Open File Explorer", "targets": ["explorer.exe"] },
+    "github": { "kind": "openUrl", "label": "Open GitHub", "url": "https://github.com" },
+    "turn180": { "kind": "turn", "label": "180 degree turn (calibrated)" },
+
+    "contestAdmin": { "kind": "openUrl", "local": true, "label": "QuantEx / Bachelier Terminal Admin", "url": "https://contest.example/admin" },
+    "criticalDebug": { "kind": "openUrl", "local": true, "label": "Critical Debug Output", "url": "https://discord.com/channels/TECH_SERVER_ID/DEBUG_CHANNEL_ID" },
+    "staffDiscord": { "kind": "openUrl", "local": true, "label": "Main Staff Discord", "url": "https://discord.com/channels/STAFF_SERVER_ID/STAFF_CHANNEL_ID" },
+    "liveLeaderboard": { "kind": "openUrl", "local": true, "label": "Live Leaderboard", "url": "https://contest.example/leaderboard" },
+
+    "organisersDiscord": { "kind": "openUrl", "local": true, "label": "Organisers Discord", "url": "https://discord.com/channels/ORGANISERS_SERVER_ID/CHANNEL_ID" },
+    "techDiscord": { "kind": "openUrl", "local": true, "label": "Technical Team Discord", "url": "https://discord.com/channels/TECH_SERVER_ID/ENGINEERING_CHANNEL_ID" },
+    "judgeDashboard": { "kind": "openUrl", "local": true, "label": "Code Court Judge Dashboard", "url": "https://judge.example/admin" },
+    "contestantPortal": { "kind": "openUrl", "local": true, "label": "Contestant Portal", "url": "https://contest.example/compete" },
+
+    "judgeLogs": { "kind": "openUrl", "local": true, "label": "Judge / Submission Logs", "url": "https://logs.example/judge" },
+    "engineLogs": { "kind": "openUrl", "local": true, "label": "Trading Engine Logs", "url": "https://logs.example/engine" },
+    "serviceHealth": { "kind": "openUrl", "local": true, "label": "Service Health / Metrics", "url": "https://status.example/dashboard" },
+    "leaderboardAdmin": { "kind": "openUrl", "local": true, "label": "Leaderboard Administration", "url": "https://contest.example/leaderboard/admin" },
+
+    "navLayer": {
+      "kind": "layer",
+      "label": "Navigation Modifier (no direct output)",
+      "layer": { "left": "organisersDiscord", "right": "techDiscord", "up": "judgeDashboard", "down": "contestantPortal" }
     },
-    "sveltekit": {
-      "script": "scaffolds/sveltekit.ps1",
-      "description": "SvelteKit"
-    },
-    "astro": {
-      "script": "scaffolds/astro.ps1",
-      "description": "Astro"
+    "debugLayer": {
+      "kind": "layer",
+      "label": "Debug Modifier (no direct output)",
+      "layer": { "left": "judgeLogs", "right": "engineLogs", "up": "serviceHealth", "down": "leaderboardAdmin" }
     }
-  }
+  },
+
+  "profiles": [
+    {
+      "id": "working",
+      "label": "Working",
+      "controlPanel": "Global Default",
+      "app": "",
+      "buttons": {
+        "lmb": { "native": "Mouse: Left Click", "label": "Left Click" },
+        "rmb": { "native": "Mouse: Right Click", "label": "Right Click" },
+        "leftFingertip": { "native": "Keyboard: Ctrl+C", "label": "Copy" },
+        "rightFingertip": { "native": "Keyboard: Ctrl+V", "label": "Paste" },
+        "frontEdge": { "native": "Keyboard: Ctrl+Y", "label": "Redo" },
+        "rearEdge": { "native": "Keyboard: Ctrl+Z", "label": "Undo" },
+        "topThumb": { "native": "Mouse: Forward (Button 5)", "label": "Forwards" },
+        "bottomThumb": { "native": "Mouse: Back (Button 4)", "label": "Backwards" },
+        "middle": { "native": "Mouse: Middle Click", "label": "Middle Click" },
+        "scrollUp": { "native": "Mouse: Scroll Up", "label": "Scroll Up" },
+        "scrollDown": { "native": "Mouse: Scroll Down", "label": "Scroll Down" },
+        "leftTriggerPush": { "relay": "screenshot" },
+        "leftTriggerPull": { "relay": "vscode" },
+        "rightTriggerPush": { "relay": "explorer" },
+        "rightTriggerPull": { "relay": "github" }
+      }
+    },
+    {
+      "id": "minecraft",
+      "label": "Gaming (Minecraft)",
+      "controlPanel": "Sub-profile",
+      "app": "javaw.exe",
+      "buttons": {
+        "lmb": { "native": "Mouse: Left Click", "label": "Left Click" },
+        "rmb": { "native": "Mouse: Right Click", "label": "Right Click" },
+        "leftFingertip": { "native": "Keyboard: Ctrl+C", "label": "Copy" },
+        "rightFingertip": { "native": "Keyboard: Ctrl+V", "label": "Paste" },
+        "frontEdge": { "native": "Keyboard: Esc", "label": "Pause / Game Menu" },
+        "rearEdge": { "native": "Keyboard: E", "label": "Inventory" },
+        "topThumb": { "native": "Keyboard: Left Shift", "hold": true, "label": "Sneak / Crouch" },
+        "bottomThumb": { "relay": "turn180" },
+        "middle": { "native": "Mouse: Middle Click", "label": "Middle Click / Pick Block" },
+        "scrollUp": { "native": "Mouse: Scroll Up", "label": "Scroll Up / Hotbar" },
+        "scrollDown": { "native": "Mouse: Scroll Down", "label": "Scroll Down / Hotbar" },
+        "leftTriggerPush": { "native": "Keyboard: Left Ctrl", "hold": true, "label": "Sprint" },
+        "leftTriggerPull": { "native": "Keyboard: F5", "label": "Toggle Perspective" },
+        "rightTriggerPush": { "native": "Keyboard: F", "label": "Swap Offhand" },
+        "rightTriggerPull": { "native": "Keyboard: F3", "label": "Debug Screen" }
+      }
+    },
+    {
+      "id": "manorLords",
+      "label": "Gaming (Manor Lords)",
+      "controlPanel": "Sub-profile",
+      "app": "ManorLords-Win64-Shipping.exe",
+      "inherits": "minecraft",
+      "buttons": {
+        "_comment": "Only the overrides; every other button is the Minecraft one.",
+        "frontEdge": { "native": "Keyboard: R", "label": "Roads" },
+        "rearEdge": { "native": "Keyboard: C", "label": "Construction" },
+        "topThumb": { "native": "Keyboard: Space", "label": "Pause / Resume" },
+        "bottomThumb": { "native": "Keyboard: M", "label": "Region Map" },
+        "leftTriggerPush": { "native": "Keyboard: X", "label": "Increase Speed" },
+        "leftTriggerPull": { "native": "Keyboard: Z", "label": "Decrease Speed" },
+        "rightTriggerPush": { "native": "Keyboard: T", "label": "Jump to Town" },
+        "rightTriggerPull": { "native": "Keyboard: Tab", "label": "More UI Info" }
+      }
+    },
+    {
+      "id": "contest",
+      "label": "Contest Management",
+      "controlPanel": "Sub-profile",
+      "app": "",
+      "appHint": "the browser dedicated to contest work",
+      "buttons": {
+        "lmb": { "native": "Mouse: Left Click", "label": "Left Click" },
+        "rmb": { "native": "Mouse: Right Click", "label": "Right Click" },
+        "leftFingertip": { "relay": "contestAdmin" },
+        "rightFingertip": { "relay": "criticalDebug" },
+        "frontEdge": { "native": "Keyboard: Ctrl+C", "label": "Copy" },
+        "rearEdge": { "native": "Keyboard: Ctrl+V", "label": "Paste" },
+        "topThumb": { "relay": "staffDiscord" },
+        "bottomThumb": { "relay": "liveLeaderboard" },
+        "middle": { "native": "Mouse: Middle Click", "label": "Middle Click" },
+        "scrollUp": { "native": "Mouse: Scroll Up", "label": "Scroll Up" },
+        "scrollDown": { "native": "Mouse: Scroll Down", "label": "Scroll Down" },
+        "leftTriggerPush": { "relay": "navLayer" },
+        "leftTriggerPull": { "native": "Keyboard: Ctrl+Shift+Tab", "label": "Previous Browser Tab" },
+        "rightTriggerPush": { "relay": "debugLayer" },
+        "rightTriggerPull": { "native": "Keyboard: Ctrl+Tab", "label": "Next Browser Tab" }
+      }
+    }
+  ]
 }
