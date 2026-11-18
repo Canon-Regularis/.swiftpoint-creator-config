@@ -3,15 +3,15 @@
     Reads an exported Swiftpoint .spcf and writes docs/spcf-schema.md describing its structure.
 
 .DESCRIPTION
-    .spcf has no published schema. The source file is only read, never modified.
-    -Merge is gated until the structure is confirmed: a malformed import can
-    destroy the profiles already on the mouse.
+    Note that .spcf has no published schema. The source file is only read, never
+    modified. -Merge is gated until the structure is confirmed: a malformed import
+    can destroy the profiles already on the mouse.
 
 .PARAMETER Source
     Path to an exported .spcf. Defaults to the newest one in reference/.
 
 .PARAMETER Merge
-    Write dist/creator-macros.spcf with the chord mappings merged in.
+    Write dist/creator-macros.spcf with the profile mappings merged in.
 
 .EXAMPLE
     pwsh -File tools/emit-spcf.ps1
@@ -209,8 +209,9 @@ $doc.Add('2. How an input (a physical button) is identified.')
 $doc.Add('3. How a keyboard output encodes key and modifiers: HID usage codes, virtual key')
 $doc.Add('   codes, or names.')
 $doc.Add('4. How press and release outputs are distinguished, and where the auto-release flag')
-$doc.Add('   lives. This decides whether `tapHold` can work.')
-$doc.Add('5. Any checksum, length prefix, or id sequence that must be recomputed on write.')
+$doc.Add('   lives. Held outputs (sneak, sprint) and the scroll-layer triggers depend on it.')
+$doc.Add('5. How a sub-profile is linked to an application, and how it inherits Global Default.')
+$doc.Add('6. Any checksum, length prefix, or id sequence that must be recomputed on write.')
 $doc.Add('')
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $SchemaDoc) | Out-Null
@@ -223,7 +224,7 @@ if ($Merge) {
     Write-Host 'Merge is gated.' -ForegroundColor Yellow
     Write-Host ''
     Write-Host '  Writing a profile guessed from an unverified structure can destroy the profiles'
-    Write-Host '  already on the mouse. Confirm the five points in the "Needed for the merge"'
+    Write-Host '  already on the mouse. Confirm the six points in the "Needed for the merge"'
     Write-Host '  section of docs/spcf-schema.md first.'
     Write-Host ''
     Write-Host '  Until then use docs/control-panel-entry-sheet.md.'

@@ -3,3 +3,7 @@ dist/
 
 # Personal device config
 reference/*.spcf
+
+# Real contest URLs. Note that the repository is public; only the placeholders in
+# config/bindings.json are committed.
+config/links.local.json
