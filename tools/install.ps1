@@ -24,11 +24,9 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-. "$PSScriptRoot/_common.ps1"
+Import-Module (Join-Path $PSScriptRoot 'SwiftpointConfig/SwiftpointConfig.psd1') -Force
 
-$RepoRoot   = Get-RepoRoot
-$RelayPath  = Get-RepoPath 'relay/swiftpoint-relay.ahk'
-$ShortcutNm = 'Swiftpoint Creator Relay.lnk'
+$ShortcutName = 'Swiftpoint Creator Relay.lnk'
 
 Write-Host ''
 Write-Host 'Swiftpoint Creator relay - setup' -ForegroundColor Cyan
@@ -41,7 +39,7 @@ $ahk = Find-AutoHotkeyV2
 if (-not $ahk -and -not $SkipInstall) {
     Write-Host 'Installing AutoHotkey v2 via winget...' -ForegroundColor Yellow
     if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-        throw "winget unavailable. Install AutoHotkey v2 from https://www.autohotkey.com/ and re-run with -SkipInstall."
+        throw 'winget unavailable. Install AutoHotkey v2 from https://www.autohotkey.com/ and re-run with -SkipInstall.'
     }
     & winget install -e --id AutoHotkey.AutoHotkey --accept-source-agreements --accept-package-agreements
     if ($LASTEXITCODE -ne 0) {
@@ -51,27 +49,26 @@ if (-not $ahk -and -not $SkipInstall) {
 }
 
 if (-not $ahk) {
-    throw "AutoHotkey v2 not found after install. Install from https://www.autohotkey.com/ and re-run."
+    throw 'AutoHotkey v2 not found after install. Install from https://www.autohotkey.com/ and re-run.'
 }
 Write-Check -Status PASS -Name 'AutoHotkey v2' -Detail $ahk
 
 # --- derived files ----------------------------------------------------------
 
 & (Get-RepoPath 'tools/generate.ps1') -Quiet
-Write-Check -Status PASS -Name 'Generated bindings' -Detail 'relay/bindings.generated.ahk, docs/control-panel-entry-sheet.md, config/links.local.example.json'
+Write-Check -Status PASS -Name 'Generated bindings' -Detail ((Get-GeneratedFile).RelativePath -join ', ')
 
 # --- start at login ---------------------------------------------------------
 
 if (-not $NoStartup) {
-    $startupDir   = [System.Environment]::GetFolderPath('Startup')
-    $shortcutPath = Join-Path $startupDir $ShortcutNm
+    $shortcutPath = Join-Path ([System.Environment]::GetFolderPath('Startup')) $ShortcutName
 
-    $shell    = New-Object -ComObject WScript.Shell
+    $shell = New-Object -ComObject WScript.Shell
     $shortcut = $shell.CreateShortcut($shortcutPath)
-    $shortcut.TargetPath       = $ahk
-    $shortcut.Arguments        = '"{0}"' -f $RelayPath
-    $shortcut.WorkingDirectory = $RepoRoot
-    $shortcut.Description      = 'Swiftpoint Creator macro relay'
+    $shortcut.TargetPath = $ahk
+    $shortcut.Arguments = '"{0}"' -f (Get-RepoPath 'relay/swiftpoint-relay.ahk')
+    $shortcut.WorkingDirectory = Get-RepoRoot
+    $shortcut.Description = 'Swiftpoint Creator macro relay'
     $shortcut.Save()
 
     Write-Check -Status PASS -Name 'Starts at login' -Detail $shortcutPath
@@ -82,16 +79,11 @@ if (-not $NoStartup) {
 # --- launch -----------------------------------------------------------------
 
 if (-not $NoStart) {
-    # Parenthesised so the array is enumerated. Note that the bare call yields
-    # Get-RelayProcess's wrapped array as one item: with no relay running, that
-    # item is an empty array, and .ProcessId throws under StrictMode.
-    foreach ($process in (Get-RelayProcess)) {
-        Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
-    }
-    Start-Process -FilePath $ahk -ArgumentList ('"{0}"' -f $RelayPath) -WorkingDirectory $RepoRoot
+    Stop-Relay
+    Start-Relay -AutoHotkeyPath $ahk
     Start-Sleep -Milliseconds 700
 
-    if ((Get-RelayProcess).Count -gt 0) {
+    if (Test-RelayRunning) {
         Write-Check -Status PASS -Name 'Relay running' -Detail 'tray icon: Swiftpoint Creator Relay'
     } else {
         Write-Check -Status WARN -Name 'Relay did not stay running' -Detail 'run tools/verify.ps1 -Test'
