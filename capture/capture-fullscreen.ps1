@@ -4,13 +4,16 @@
     clipboard.
 
 .DESCRIPTION
-    The relay calls this instead of sending Win+Shift+S. Note that the Snipping
-    Tool overlay opens in whatever mode was last used and ignores injected
-    keystrokes, so a macro cannot make it capture the full screen. Doing the
-    capture here is deterministic and needs no setup.
+    The relay calls this instead of sending Win+Shift+S. The Snipping Tool
+    overlay opens in whatever mode was last used and ignores injected
+    keystrokes, so a macro cannot make it capture the full screen. Capturing
+    here is deterministic and needs no setup.
 
     Success is silent: the image on the clipboard is the confirmation. Failures
     log and toast.
+
+    This script is standalone on purpose: the relay may run it under Windows
+    PowerShell 5.1 on every screenshot, and it loads nothing it does not need.
 
 .PARAMETER SaveDir
     Where the file is written. Empty means Pictures\Screenshots. %VAR% is
@@ -25,6 +28,10 @@
 .PARAMETER NoClipboard
     Skip the clipboard. Used by the checks, so a test run does not disturb it.
 
+.PARAMETER ResolveSaveDir
+    Print the folder a capture would be saved in, and exit without capturing.
+    tools/verify.ps1 uses this, so the folder rule lives only here.
+
 .EXAMPLE
     pwsh -File capture/capture-fullscreen.ps1 -Format jpg
 #>
@@ -33,14 +40,15 @@ param(
     [string]$SaveDir,
     [ValidateSet('jpg', 'png')][string]$Format = 'jpg',
     [switch]$NoSave,
-    [switch]$NoClipboard
+    [switch]$NoClipboard,
+    [switch]$ResolveSaveDir
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $CaptureRepoRoot = Split-Path -Parent $PSScriptRoot
-$CaptureLogFile  = Join-Path $CaptureRepoRoot 'logs/capture.log'
+$CaptureLogFile = Join-Path $CaptureRepoRoot 'logs/capture.log'
 
 function Write-CaptureLog {
     param([Parameter(Mandatory)][string]$Message)
@@ -57,7 +65,7 @@ function Show-CaptureToast {
     param([Parameter(Mandatory)][string]$Title, [string]$Message = '')
     try {
         $notifyIcon = New-Object System.Windows.Forms.NotifyIcon
-        $notifyIcon.Icon    = [System.Drawing.SystemIcons]::Warning
+        $notifyIcon.Icon = [System.Drawing.SystemIcons]::Warning
         $notifyIcon.Visible = $true
         $notifyIcon.ShowBalloonTip(3000, $Title, $Message, [System.Windows.Forms.ToolTipIcon]::Warning)
         Start-Sleep -Seconds 3
@@ -79,10 +87,9 @@ function Resolve-SaveDirectory {
     return (Join-Path $CaptureRepoRoot $expanded)
 }
 
-# Note that the JPEG is written at the GDI+ default quality. An explicit
-# quality goes through ImageCodecInfo and EncoderParameters, and that pattern
-# beside a screen grab is blocked by Defender's AMSI scan as malicious, so the
-# script would not even parse.
+# JPEGs use the GDI+ default quality. Setting a quality needs ImageCodecInfo
+# and EncoderParameters, and that pattern next to a screen grab makes
+# Defender's AMSI scan block the whole script as malicious.
 function Save-Capture {
     param(
         [Parameter(Mandatory)][System.Drawing.Bitmap]$Bitmap,
@@ -99,8 +106,8 @@ function Save-Capture {
 # Per-monitor DPI awareness, set before any bounds are read. A DPI-unaware
 # process sees a scaled display at its logical size (1536x864 for 1920x1080 at
 # 125%), yet CopyFromScreen copies physical pixels, so the "full screen" would
-# be only the top-left crop of it. Note that SetProcessDpiAwarenessContext
-# needs Windows 10 1703+; earlier builds take the system-aware fallback.
+# be only its top-left corner. SetProcessDpiAwarenessContext needs Windows 10
+# 1703+; older builds fall back to system awareness.
 function Enable-DpiAwareness {
     if (-not ('CaptureDpi.Native' -as [type])) {
         Add-Type -Namespace CaptureDpi -Name Native -MemberDefinition @'
@@ -116,13 +123,18 @@ function Enable-DpiAwareness {
     [void][CaptureDpi.Native]::SetProcessDPIAware()
 }
 
+if ($ResolveSaveDir) {
+    Resolve-SaveDirectory -Requested $SaveDir
+    return
+}
+
 try {
     Enable-DpiAwareness
     Add-Type -AssemblyName System.Windows.Forms
     Add-Type -AssemblyName System.Drawing
 
     # VirtualScreen, not PrimaryScreen: it covers every monitor, including those
-    # positioned left of or above the primary, which give negative origins.
+    # left of or above the primary, which give negative origins.
     $bounds = [System.Windows.Forms.SystemInformation]::VirtualScreen
     $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
 
@@ -146,8 +158,8 @@ try {
 
         if (-not $NoClipboard) {
             # It is guaranteed that both PowerShell editions start -File on an
-            # STA thread, which the clipboard requires. Should that ever cease
-            # to hold, this fails loudly rather than silently.
+            # STA thread, which the clipboard requires. If that ever stops
+            # holding, this fails loudly rather than silently.
             if ([System.Threading.Thread]::CurrentThread.GetApartmentState() -ne 'STA') {
                 throw 'Clipboard needs an STA thread, but this host started MTA.'
             }
@@ -158,8 +170,8 @@ try {
         if ($savedTo) { $targets += $savedTo }
         if (-not $NoClipboard) { $targets += 'clipboard' }
         if ($targets.Count -eq 0) { $targets += 'nowhere (-NoSave -NoClipboard)' }
-        Write-CaptureLog ('captured {0}x{1} at {2},{3} -> {4}' -f
-            $bounds.Width, $bounds.Height, $bounds.Left, $bounds.Top, ($targets -join ' + '))
+        $size = '{0}x{1} at {2},{3}' -f $bounds.Width, $bounds.Height, $bounds.Left, $bounds.Top
+        Write-CaptureLog "captured $size -> $($targets -join ' + ')"
     } finally {
         $bitmap.Dispose()
     }
