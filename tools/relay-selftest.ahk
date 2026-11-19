@@ -1,6 +1,6 @@
 ; Relay selftest. Drives every chord and every scroll layer synthetically, and
-; prints one "EXPECT <line>" to stdout for each TEST line the relay is required
-; to log in return. tools/ci.ps1 compares the two, in order and in number.
+; prints one "EXPECT <line>" to stdout for each TEST line the relay must log in
+; return. tools/ci.ps1 compares the two, in order and in number.
 ;
 ; Run:  AutoHotkey.exe /ErrorStdOut tools\relay-selftest.ahk --relay-in-test-mode
 ;
@@ -23,15 +23,15 @@ if (!confirmed) {
     ExitApp(2)
 }
 
-; Note that both of these are required, or nothing fires and there is no error:
-; at send level 0 the relay's hotkeys ignore input from another script, and a
-; chord's modifiers are recognised only as real down/up events.
+; Both are needed, or nothing fires and there is no error: at send level 0 the
+; relay's hotkeys ignore input from another script, and a chord's modifiers are
+; recognised only as real down/up events.
 SendMode("Event")
 SendLevel(1)
 
 ; The relay's keyboard and mouse hooks are installed on a thread of their own,
-; so they may still be starting when its start line is logged. Note that a
-; press sent before then is lost silently.
+; so they may still be starting when its start line is logged. A press sent
+; before then is lost silently.
 Sleep(1000)
 
 Expect(line) {
@@ -42,8 +42,8 @@ Gap() {
     Sleep(70)
 }
 
-; A press, two auto-repeats and a release; the repeats are required to be
-; ignored, so exactly one line is expected per chord.
+; A press, two auto-repeats and a release. The relay must ignore the repeats,
+; so exactly one line is expected per chord.
 PressHeld(cfg) {
     Send(cfg["modsDown"] "{" cfg["key"] " down}")
     Gap()
@@ -76,8 +76,8 @@ for chord, cfg in BINDINGS {
 }
 
 ; Each layer: trigger down, three wheel events per direction (only the first of
-; which may fire), trigger up, then one wheel event that is required to pass
-; through and produce nothing.
+; which may fire), trigger up, then one wheel event that must pass through and
+; produce nothing.
 wheels := [["left", "WheelLeft"], ["right", "WheelRight"], ["up", "WheelUp"], ["down", "WheelDown"]]
 for chord, cfg in BINDINGS {
     layer := ACTIONS[cfg["id"]]

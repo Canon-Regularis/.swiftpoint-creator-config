@@ -11,7 +11,7 @@ modified.
 
 To export: Control Panel, **Expert Mode** (bottom left), export profiles to a `.spcf`.
 
-Keep an unedited backup. Note that `.spcf` has no published schema, and that a malformed import
-can destroy the profiles already on the mouse.
+Keep an unedited backup. `.spcf` has no published schema, and a malformed import can destroy
+the profiles already on the mouse.
 
 `.spcf` files are gitignored: they are personal device config.

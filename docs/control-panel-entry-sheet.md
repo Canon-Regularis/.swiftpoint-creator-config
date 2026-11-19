@@ -4,8 +4,8 @@
 
 Chord set `f13`. A button marked **Keyboard: F..** emits that one key and nothing
 else; the relay resolves it. Every other button is programmed natively and never reaches the
-relay. Note that each relay key is unique across all profiles, so the relay need not know
-which profile is active.
+relay. Each relay key is unique across all profiles, so the relay does not need to know which
+profile is active.
 
 ## Profiles
 
@@ -124,8 +124,8 @@ and push again.
    2. **+ Add mappings**, if it has none.
    3. Click the output name (reads **Do Nothing**).
    4. **Output Type**, then a keyboard or mouse output.
-   5. Enter the output. Note that the keyboard recorder cannot capture F13-F24 (no physical
-      key), so pick them from the key list.
+   5. Enter the output. The keyboard recorder cannot capture F13-F24 (no physical key), so
+      pick them from the key list.
    6. Set **Auto-Release Outputs** as the table says.
 5. Confirm the mappings are in onboard flash (automatic in Control Panel 3.1.1.0+).
 
@@ -138,8 +138,8 @@ reads as an instant press and release, and the wheel keeps scrolling the page.
 
 ## Calibrating the 180 degree turn
 
-The turn moves the mouse by `turn.counts` = 1200 relative counts. Note that the
-angle depends on the in-game sensitivity, so a change of sensitivity requires recalibration.
+The turn moves the mouse by `turn.counts` = 1200 relative counts. The angle
+depends on the in-game sensitivity; recalibrate after changing it.
 
 1. Minecraft, **Options > Controls > Mouse Settings**: **Raw Input** on.
 2. Press **F3** and note the yaw in the **Facing** line.
@@ -156,8 +156,7 @@ URLs go in `config/links.local.json`, which is gitignored:
 2. Replace each placeholder. A key left out falls back to its placeholder, and the relay
    logs a warning once.
 3. Optionally set `browser` to the full path of the browser linked to Contest Management.
-   Note that a link opened in a different browser moves focus there, and the profile
-   switches off.
+   A link opened in a different browser moves focus there and switches the profile off.
 
 The relay re-reads the file on its next use; no reload is needed.
 
@@ -168,8 +167,7 @@ Run `pwsh -File tools/verify.ps1 -Test` and watch for a tooltip.
 - **The selftest passes but the mouse shows no tooltip**: the Control Panel is not emitting
   the key. If F13-F24 are not offered in its key list, set `activeChordSet` to
   `"ctrlAltShift"` in `config/bindings.json`, re-run `tools/generate.ps1`, reload the relay
-  (tray icon > **Reload**), and reprogram. Note that the relay reads its bindings only when
-  it starts.
+  (tray icon > **Reload**), and reprogram. The relay reads its bindings only when it starts.
 - **The page scrolls while a layer trigger is held**: Auto-Release Outputs is on for that
   trigger. Turn it off.
 - **A contest button opens a placeholder** (a `.example` page, or a Discord link with

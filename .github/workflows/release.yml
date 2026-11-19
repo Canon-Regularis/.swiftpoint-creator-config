@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 jobs:
-  # The same checks as CI. Note that a tag which fails them produces no release.
+  # The same checks as CI. A tag that fails them produces no release.
   check:
     uses: ./.github/workflows/ci.yml
 

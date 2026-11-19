@@ -3,9 +3,9 @@
     Reads an exported Swiftpoint .spcf and writes docs/spcf-schema.md describing its structure.
 
 .DESCRIPTION
-    Note that .spcf has no published schema. The source file is only read, never
-    modified. -Merge is gated until the structure is confirmed: a malformed import
-    can destroy the profiles already on the mouse.
+    .spcf has no published schema. The source file is only read, never modified.
+    -Merge is gated until the structure is confirmed: a malformed import can
+    destroy the profiles already on the mouse.
 
 .PARAMETER Source
     Path to an exported .spcf. Defaults to the newest one in reference/.
@@ -25,7 +25,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-. "$PSScriptRoot/_common.ps1"
+Import-Module (Join-Path $PSScriptRoot 'SwiftpointConfig/SwiftpointConfig.psd1') -Force
 
 $SchemaDoc = Get-RepoPath 'docs/spcf-schema.md'
 
@@ -34,8 +34,8 @@ $SchemaDoc = Get-RepoPath 'docs/spcf-schema.md'
 if (-not $Source) {
     $referenceDir = Get-RepoPath 'reference'
     $found = Get-ChildItem -Path $referenceDir -Filter '*.spcf' -ErrorAction SilentlyContinue |
-             Sort-Object LastWriteTime -Descending |
-             Select-Object -First 1
+        Sort-Object -Property LastWriteTime -Descending |
+        Select-Object -First 1
     if (-not $found) {
         Write-Host ''
         Write-Host 'No .spcf found.' -ForegroundColor Yellow
@@ -78,7 +78,7 @@ $format = 'unknown'
 $parsed = $null
 
 if ($magic -like '50-4B-*') {
-    $format = 'zip'                       # "PK.."
+    $format = 'zip'    # "PK.."
 } elseif ($text -and $text.TrimStart() -match '^[\{\[]') {
     try {
         $parsed = $text | ConvertFrom-Json
@@ -157,8 +157,8 @@ function Add-XmlOutline {
 
 switch -Wildcard ($format) {
     'json' { Add-JsonOutline -Node $parsed }
-    'xml'  { Add-XmlOutline -Node $parsed }
-    'zip'  {
+    'xml' { Add-XmlOutline -Node $parsed }
+    'zip' {
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         $archive = [System.IO.Compression.ZipFile]::OpenRead($sourceItem.FullName)
         try {
@@ -214,7 +214,6 @@ $doc.Add('5. How a sub-profile is linked to an application, and how it inherits 
 $doc.Add('6. Any checksum, length prefix, or id sequence that must be recomputed on write.')
 $doc.Add('')
 
-New-Item -ItemType Directory -Force -Path (Split-Path -Parent $SchemaDoc) | Out-Null
 Write-Utf8NoBom -Path $SchemaDoc -Content ($doc -join "`r`n")
 
 Write-Host "Wrote docs/spcf-schema.md ($($outline.Count) lines)" -ForegroundColor Green

@@ -4,8 +4,8 @@
 
 .DESCRIPTION
     The bundle is everything needed to install on a fresh machine. It excludes
-    workflow files, runtime output, any exported .spcf (personal device config)
-    and config/links.local.json (the real contest URLs).
+    workflow files, editor and git settings, runtime output, any exported .spcf
+    (personal device config) and config/links.local.json (the real contest URLs).
 
 .PARAMETER Version
     Version string for the filename. A leading "v" is kept as given.
@@ -25,7 +25,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-. "$PSScriptRoot/_common.ps1"
+Import-Module (Join-Path $PSScriptRoot 'SwiftpointConfig/SwiftpointConfig.psd1') -Force
 
 $RepoRoot = Get-RepoRoot
 if (-not $OutDir) { $OutDir = Join-Path $RepoRoot 'dist' }
@@ -41,7 +41,14 @@ $include = @(
     'PSScriptAnalyzerSettings.psd1'
 )
 
-$staging = Join-Path ([System.IO.Path]::GetTempPath()) ("swiftpoint-pack-" + [guid]::NewGuid().ToString('N'))
+# The bundle fails to install or to start without any of these.
+$required = @(
+    'relay/swiftpoint-relay.ahk'
+    'relay/bindings.generated.ahk'
+    'tools/SwiftpointConfig/SwiftpointConfig.psd1'
+) + @(Get-ChildItem -Path (Get-RepoPath 'relay/lib') -Filter '*.ahk' | ForEach-Object { "relay/lib/$($_.Name)" })
+
+$staging = Join-Path ([System.IO.Path]::GetTempPath()) ('swiftpoint-pack-' + [guid]::NewGuid().ToString('N'))
 $bundleRoot = Join-Path $staging 'swiftpoint-creator-config'
 New-Item -ItemType Directory -Force -Path $bundleRoot | Out-Null
 
@@ -49,26 +56,26 @@ try {
     foreach ($item in $include) {
         $source = Join-Path $RepoRoot $item
         if (-not (Test-Path -LiteralPath $source)) {
-            Write-Check -Status WARN -Name "missing, skipped" -Detail $item
+            Write-Check -Status WARN -Name 'missing, skipped' -Detail $item
             continue
         }
         Copy-Item -LiteralPath $source -Destination $bundleRoot -Recurse -Force
     }
 
     # config/ is copied whole, so the gitignored overlay of real contest URLs
-    # comes with it whenever one exists on this machine. It is removed here,
-    # and it is required that no copy of it survives anywhere in the bundle.
+    # comes with it whenever one exists on this machine. It is removed here, and
+    # no copy of it may survive anywhere in the bundle.
     Remove-Item -LiteralPath (Join-Path $bundleRoot 'config/links.local.json') -Force -ErrorAction SilentlyContinue
     $leaked = @(Get-ChildItem -Path $bundleRoot -Filter 'links.local.json' -Recurse -File)
     if ($leaked.Count -gt 0) {
         throw "links.local.json is still in the bundle: $($leaked[0].FullName)"
     }
 
-    # The generated include must be in the bundle, or the relay will not start.
-    $generated = Join-Path $bundleRoot 'relay/bindings.generated.ahk'
-    if (-not (Test-Path -LiteralPath $generated)) {
-        throw "relay/bindings.generated.ahk missing. Run tools/generate.ps1 first."
+    $absent = @($required | Where-Object { -not (Test-Path -LiteralPath (Join-Path $bundleRoot $_)) })
+    if ($absent.Count -gt 0) {
+        throw "Missing from the bundle: $($absent -join ', '). Run tools/generate.ps1 first if the generated include is listed."
     }
+    $null = Test-ModuleManifest -Path (Join-Path $bundleRoot 'tools/SwiftpointConfig/SwiftpointConfig.psd1')
 
     New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
     $zipPath = Join-Path $OutDir "swiftpoint-creator-config-$Version.zip"
@@ -77,7 +84,7 @@ try {
     Compress-Archive -Path (Join-Path $staging '*') -DestinationPath $zipPath
     $size = (Get-Item -LiteralPath $zipPath).Length
 
-    Write-Check -Status PASS -Name 'bundle built' -Detail ("{0} ({1:N0} bytes)" -f $zipPath, $size)
+    Write-Check -Status PASS -Name 'bundle built' -Detail ('{0} ({1:N0} bytes)' -f $zipPath, $size)
     Write-Output $zipPath
 } finally {
     Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue

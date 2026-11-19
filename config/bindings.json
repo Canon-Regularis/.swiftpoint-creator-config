@@ -6,7 +6,7 @@
 
   "chordSets": {
     "f13": {
-      "_comment": "One chord per relay action, with no modifiers. F13-F24 have no physical key, so nothing else can collide with them. Note that a held chord with modifiers would hold Ctrl+Alt+Shift down while scrolling a layer, and Ctrl+wheel zooms.",
+      "_comment": "One chord per relay action, with no modifiers. F13-F24 have no physical key, so nothing else can collide with them. A held chord with modifiers would keep Ctrl+Alt+Shift down while scrolling a layer, and Ctrl+wheel zooms.",
       "screenshot": { "mods": [], "key": "F13" },
       "vscode": { "mods": [], "key": "F14" },
       "explorer": { "mods": [], "key": "F15" },
@@ -20,7 +20,7 @@
       "debugLayer": { "mods": [], "key": "F23" }
     },
     "ctrlAltShift": {
-      "_comment": "Fallback for a Control Panel whose key list has no F13-F24. Note that a click made while a layer trigger is held then carries Ctrl+Alt+Shift, and that these combinations may collide with graphics-driver hotkeys.",
+      "_comment": "Fallback for a Control Panel whose key list has no F13-F24. With it, a click made while a layer trigger is held carries Ctrl+Alt+Shift, and these combinations may collide with graphics-driver hotkeys.",
       "screenshot": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F1" },
       "vscode": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F2" },
       "explorer": { "mods": ["Ctrl", "Alt", "Shift"], "key": "F3" },
