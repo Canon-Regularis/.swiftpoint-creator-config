@@ -1,0 +1,12 @@
+# Windows-only repository: LF in git, CRLF in the working tree, which is what
+# tools/generate.ps1 writes.
+* text=auto eol=crlf
+
+*.png binary
+*.jpg binary
+*.zip binary
+
+# Collapsed in diffs on GitHub; regenerate with tools/generate.ps1.
+relay/bindings.generated.ahk      linguist-generated=true
+docs/control-panel-entry-sheet.md linguist-generated=true
+config/links.local.example.json   linguist-generated=true
